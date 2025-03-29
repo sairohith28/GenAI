@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elderly Care Multi-Agent Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .user-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .card-header {
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-header h2 {
+            font-size: 18px;
+            margin: 0;
+            color: #2c3e50;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        .badge-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        .badge-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .metric {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .chart-container {
+            height: 250px;
+        }
+        .status-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .status-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eaeaea;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .status-item-title {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .status-item-time {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        .status-item-details {
+            font-size: 14px;
+            color: #34495e;
+        }
+        .action-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .action-button:hover {
+            background-color: #2980b9;
+        }
+        .refresh-button {
+            background-color: #2ecc71;
+        }
+        .refresh-button:hover {
+            background-color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Elderly Care Multi-Agent Dashboard</h1>
+        </div>
+        
+        <div class="user-selector">
+            <label for="user-select">Select User: </label>
+            <select id="user-select" onchange="loadUserData()">
+                <option value="D1000">User D1000</option>
+                <option value="D1001">User D1001</option>
+                <option value="D1002">User D1002</option>
+                <option value="D1003">User D1003</option>
+            </select>
+            <button class="action-button refresh-button" onclick="loadUserData()">Refresh Data</button>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Health Monitoring</h2>
+                    <span id="health-status-badge" class="badge badge-success">Normal</span>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="metric-label">Heart Rate</div>
+                        <div id="heart-rate" class="metric-value">85 bpm</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Blood Pressure</div>
+                        <div id="blood-pressure" class="metric-value">120/80 mmHg</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Glucose Level</div>
+                        <div id="glucose-level" class="metric-value">100 mg/dL</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Oxygen Saturation</div>
+                        <div id="oxygen-saturation" class="metric-value">98%</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="health-chart"></canvas>
+                </div>
+                <div class="card-footer">
+                    <button class="action-button" onclick="notifyHealthcare()">Contact Healthcare Provider</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Safety Monitoring</h2>
+                    <span id="safety-status-badge" class="badge badge-success">Safe</span>
+                </div>
+                <div id="location-info">
+                    <p>Last detected location: <strong id="current-location">Living Room</strong></p>
+                    <p>Last activity: <strong id="last-activity">Walking</strong></p>
+                    <p>Last movement detected: <strong id="last-movement">2 minutes ago</strong></p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="activity-chart"></canvas>
+                </div>
+                <div class="card-footer">
+                    <button class="action-button" onclick="checkOnUser()">Check on User</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Reminders</h2>
+                    <span id="reminders-badge" class="badge badge-warning">2 Upcoming</span>
+                </div>
+                <ul class="status-list" id="reminders-list">
+                    <li class="status-item">
+                        <div class="status-item-header">
+                            <div class="status-item-title">Medication Reminder</div>
+                            <div class="status-item-time">In 30 minutes (10:30 AM)</div>
+                        </div>
+                        <div class="status-item-details">Take blood pressure medication with breakfast</div>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-item-header">
+                            <div class="status-item-title">Doctor Appointment</div>
+                            <div class="status-item-time">In 2 hours (12:00 PM)</div>
+                        </div>
+                        <div class="status-item-details">Annual checkup with Dr. Smith</div>
+                    </li>
+                </ul>
+                <div class="card-footer">
+                    <button class="action-button" onclick="addReminder()">Add New Reminder</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>AI Analysis</h2>
+                </div>
+                <div id="analysis-content">
+                    <p>Ask the AI system to analyze the user's current situation or provide specific recommendations.</p>
+                </div>
+                <div>
+                    <textarea id="analysis-query" placeholder="Enter your query here..." rows="3" style="width: 100%; margin-bottom: 10px;"></textarea>
+                    <button class="action-button" onclick="runAnalysis()">Run Analysis</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for charts
+        const healthData = {
+            labels: ['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM'],
+            datasets: [
+                {
+                    label: 'Heart Rate',
+                    data: [72, 75, 82, 85, 80, 78],
+                    borderColor: '#e74c3c',
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: 'Blood Glucose',
+                    data: [110, 105, 112, 100, 95, 98],
+                    borderColor: '#3498db',
+                    fill: false,
+                    tension: 0.1
+                }
+            ]
+        };
+
+        const activityData = {
+            labels: ['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM'],
+            datasets: [
+                {
+                    label: 'Movement Activity',
+                    data: [30, 45, 10, 20, 5, 15],
+                    backgroundColor: '#2ecc71',
+                }
+            ]
+        };
+
+        // Initialize charts
+        const healthCtx = document.getElementById('health-chart').getContext('2d');
+        const healthChart = new Chart(healthCtx, {
+            type: 'line',
+            data: healthData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+
+        const activityCtx = document.getElementById('activity-chart').getContext('2d');
+        const activityChart = new Chart(activityCtx, {
+            type: 'bar',
+            data: activityData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Minutes of Activity'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Functions to interact with the backend API
+        // At the top of your script section, add this line:
+const API_BASE_URL = "http://localhost:5000";  // Change if your Flask server uses a different address
+function loadUserData() {
+    const userId = document.getElementById('user-select').value;
+    const baseUrl = 'http://192.168.1.4:5000';  // Your Flask server
+    
+    fetch(`${baseUrl}/api/user/${userId}/health-status`)
+        .then(response => response.json())
+        .then(data => updateHealthData(data))
+        .catch(error => console.error('Health fetch error:', error));
+    
+    fetch(`${baseUrl}/api/user/${userId}/safety-status`)
+        .then(response => response.json())
+        .then(data => updateSafetyData(data))
+        .catch(error => console.error('Safety fetch error:', error));
+    
+    fetch(`${baseUrl}/api/user/${userId}/reminders?look_ahead_hours=4`)
+        .then(response => response.json())
+        .then(data => updateRemindersData(data))
+        .catch(error => console.error('Reminders fetch error:', error));
+}
+
+function updateHealthData(data) {
+    console.log('Health data:', data);
+    const badge = document.getElementById('health-status-badge');
+    if (data.alerts && data.alerts.length > 0) {
+        badge.className = 'badge badge-danger';
+        badge.textContent = 'Alert';
+    } else {
+        badge.className = 'badge badge-success';
+        badge.textContent = 'Normal';
+    }
+}
+
+function updateSafetyData(data) {
+    console.log('Safety data:', data);
+    const badge = document.getElementById('safety-status-badge');
+    if (data.alert) {
+        badge.className = 'badge badge-danger';
+        badge.textContent = data.alert;
+    } else {
+        badge.className = 'badge badge-success';
+        badge.textContent = 'Safe';
+    }
+}
+
+function updateRemindersData(data) {
+    console.log('Reminders data:', data);
+    const badge = document.getElementById('reminders-badge');
+    const remindersList = document.getElementById('reminders-list');
+    
+    if (data.upcoming_reminders && data.upcoming_reminders.length > 0) {
+        badge.className = 'badge badge-warning';
+        badge.textContent = `${data.upcoming_reminders.length} Upcoming`;
+        remindersList.innerHTML = '';
+        data.upcoming_reminders.forEach(reminder => {
+            const li = document.createElement('li');
+            li.className = 'status-item';
+            li.innerHTML = `
+                <div class="status-item-header">
+                    <div class="status-item-title">${reminder.type}</div>
+                    <div class="status-item-time">In ${reminder.time_until} (${reminder.scheduled_time})</div>
+                </div>
+                <div class="status-item-details">
+                    ${reminder.already_sent ? 'Reminder sent' : 'Not yet sent'} - 
+                    ${reminder.acknowledged ? 'Acknowledged' : 'Not acknowledged'}
+                </div>
+            `;
+            remindersList.appendChild(li);
+        });
+    } else {
+        badge.className = 'badge badge-success';
+        badge.textContent = 'None';
+        remindersList.innerHTML = '<li class="status-item">No upcoming reminders for the next few hours.</li>';
+    }
+}
+
+function runAnalysis() {
+    const userId = document.getElementById('user-select').value;
+    const query = document.getElementById('analysis-query').value;
+    const baseUrl = 'http://192.168.1.4:5000';
+    
+    if (!query.trim()) {
+        alert('Please enter a query for analysis.');
+        return;
+    }
+    
+    document.getElementById('analysis-content').innerHTML = '<p>Analyzing... Please wait.</p>';
+    
+    fetch(`${baseUrl}/api/user/${userId}/analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('analysis-content').innerHTML = 
+            `<p><strong>Analysis Result:</strong></p><p>${data.analysis || 'No analysis returned'}</p>`;
+    })
+    .catch(error => {
+        document.getElementById('analysis-content').innerHTML = 
+            `<p>Error running analysis: ${error}</p>`;
+    });
+}
+
+function notifyHealthcare() {
+    const userId = document.getElementById('user-select').value;
+    const baseUrl = 'http://192.168.1.4:5000';
+    
+    fetch(`${baseUrl}/api/notify-caregiver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            user_id: userId, 
+            alert_type: 'Healthcare Needed', 
+            details: { reason: 'Manual request from dashboard' }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Healthcare provider notified successfully.');
+    })
+    .catch(error => {
+        alert('Error notifying healthcare provider: ' + error);
+    });
+}
+
+function checkOnUser() {
+    const userId = document.getElementById('user-select').value;
+    const baseUrl = 'http://192.168.1.4:5000';
+    
+    fetch(`${baseUrl}/api/notify-caregiver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            user_id: userId, 
+            alert_type: 'Check Requested', 
+            details: { reason: 'Manual request from dashboard' }
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Caregiver notified to check on user.');
+    })
+    .catch(error => {
+        alert('Error notifying caregiver: ' + error);
+    });
+}
+
+function addReminder() {
+    alert('This feature would open a form to add a new reminder for the user.');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadUserData();
+});
+
+    </script>
+</body>
+</html>
