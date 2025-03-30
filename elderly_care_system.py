@@ -144,18 +144,27 @@ class HealthMonitorAgent(AssistantAgent):
         if spo2 < thresholds["spo2_min"]:
             alerts.append(f"Oxygen saturation is {spo2}%, below threshold {thresholds['spo2_min']}%")
         
+        # In HealthMonitorAgent.monitor_health
         if alerts:
             return {
                 "user_id": user_id,
                 "timestamp": recent_data["Timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
                 "alerts": alerts,
-                "recommendation": self._generate_health_recommendation(alerts)
+                "recommendation": self._generate_health_recommendation(alerts),
+                "heart_rate": recent_data["Heart Rate"],
+                "blood_pressure": recent_data["Blood Pressure"],
+                "glucose": recent_data["Glucose Levels"],
+                "spo2": recent_data["Oxygen Saturation (SpO₂%)"]
             }
         else:
             return {
                 "user_id": user_id,
                 "timestamp": recent_data["Timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
-                "status": "All health metrics within normal range"
+                "status": "All health metrics within normal range",
+                "heart_rate": recent_data["Heart Rate"],
+                "blood_pressure": recent_data["Blood Pressure"],
+                "glucose": recent_data["Glucose Levels"],
+                "spo2": recent_data["Oxygen Saturation (SpO₂%)"]
             }
     
     def _generate_health_recommendation(self, alerts):

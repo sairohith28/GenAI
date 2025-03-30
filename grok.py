@@ -1,174 +1,181 @@
+# Required Libraries
 import autogen
+import pandas as pd
 import requests
 import json
-from typing import Dict, List
-import pandas as pd
+import logging
 from datetime import datetime
+import streamlit as st
+from gtts import gTTS
+import os
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Configuration for your hosted LLM (minimal, since we rely on custom function)
-llm_config = {
-    "config_list": [{
-        "model": "unsloth/Qwen2.5-1.5B-Instruct",
-        "api_key": "apex@#1"  # Kept for compatibility, but we'll override with custom function
-    }],
-    "timeout": 120,
-    "max_tokens": 500,
-    "temperature": 0.7,
-}
+# Logging Configuration
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Custom function to call your hosted LLM with authentication
-def call_custom_llm(messages: List[Dict]) -> str:
+# LLM API Configuration
+LLM_API_URL = "http://203.112.158.104:5006/v1/chat/completions"
+LLM_MODEL = "unsloth/Qwen2.5-1.5B-Instruct"
+
+# Function to Call LLM API
+def call_llm_api(prompt, system_message="You are an expert AI assistant", max_tokens=150):
     payload = {
-        "model": "unsloth/Qwen2.5-1.5B-Instruct",
-        "messages": messages,
-        "max_tokens": 500
+        "model": LLM_MODEL,
+        "messages": [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": max_tokens
     }
-    
     headers = {
-    "api-key": "apex@#1",
-    "Content-Type": "application/json"
-}
-    
+        "Authorization": "Bearer apex@#1",
+        "Content-Type": "application/json"
+    }
     try:
-        response = requests.post(
-            "http://203.112.158.104:5006/v1/chat/completions",
-            json=payload,
-            headers=headers,
-            timeout=120
-        )
+        response = requests.post(LLM_API_URL, json=payload, headers=headers)
         response.raise_for_status()
-        result = response.json()
-        return result["choices"][0]["message"]["content"]
-    except requests.exceptions.RequestException as e:
-        return f"Error calling LLM: {str(e)} - Status Code: {e.response.status_code if e.response else 'No response'} - Response: {e.response.text if e.response else 'No response'}"
+        return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        logger.error(f"Error calling LLM API: {e}")
+        return f"Error: {str(e)}"
 
-# Load datasets with error handling
-def load_csv_with_fallback(file_name: str) -> pd.DataFrame:
-    try:
-        return pd.read_csv(file_name)
-    except FileNotFoundError:
-        print(f"Warning: {file_name} not found. Using empty DataFrame as fallback.")
-        return pd.DataFrame()
+# Load Datasets
+daily_reminders = pd.read_csv("/Users/hitty/hitty_code/hackathon/daily_reminder.csv")
+health_data = pd.read_csv("/Users/hitty/hitty_code/hackathon/health_monitoring.csv")
+safety_data = pd.read_csv("/Users/hitty/hitty_code/hackathon/safety_monitoring.csv")
 
-health_data = load_csv_with_fallback("health_monitoring.csv")
-safety_data = load_csv_with_fallback("safety_monitoring.csv")
-reminder_data = load_csv_with_fallback("daily_remainder.csv")
+# AutoGen Agent Configurations
+config_list = [
+    {
+        "model": LLM_MODEL,
+        "api_key": "apex@#1",  # Dummy key since we use Bearer token
+        "base_url": LLM_API_URL,
+        "api_type": "custom",  # Custom endpoint
+    }
+]
 
-# Define agents with custom LLM function
+# Health Monitoring Agent
 health_agent = autogen.AssistantAgent(
-    name="HealthMonitoringAgent",
-    system_message="You are a health monitoring specialist. Analyze health data and generate alerts if values exceed thresholds.",
-    llm_config=llm_config,
-    human_input_mode="NEVER",
-    code_execution_config=False,  # Disable code execution to force custom LLM
-    function_map={"call_llm": call_custom_llm}
+    name="HealthAgent",
+    system_message="You are a health monitoring expert. Analyze health data and alert if thresholds are breached.",
+    llm_config={"config_list": config_list}
 )
 
+# Safety Monitoring Agent
 safety_agent = autogen.AssistantAgent(
-    name="SafetyMonitoringAgent",
-    system_message="You are a safety monitoring expert. Analyze movement data, detect falls, and monitor unusual behavior patterns.",
-    llm_config=llm_config,
-    human_input_mode="NEVER",
-    code_execution_config=False,
-    function_map={"call_llm": call_custom_llm}
+    name="SafetyAgent",
+    system_message="You are a safety expert. Detect falls or unusual inactivity and notify caregivers.",
+    llm_config={"config_list": config_list}
 )
 
+# Reminder Agent
 reminder_agent = autogen.AssistantAgent(
     name="ReminderAgent",
-    system_message="You are a personal assistant for elderly care. Manage daily reminders for medication, appointments, and activities.",
-    llm_config=llm_config,
-    human_input_mode="NEVER",
-    code_execution_config=False,
-    function_map={"call_llm": call_custom_llm}
+    system_message="You are a reminder assistant. Send reminders for daily activities and track acknowledgments.",
+    llm_config={"config_list": config_list}
 )
 
+# Coordinator Agent
 coordinator_agent = autogen.AssistantAgent(
     name="CoordinatorAgent",
-    system_message="You are the central coordinator for elderly care. Receive inputs from Health, Safety, and Reminder agents, make decisions, and recommend actions.",
-    llm_config=llm_config,
+    system_message="You coordinate between health, safety, and reminder agents. Notify caregivers/family if needed.",
+    llm_config={"config_list": config_list}
+)
+
+# Wellness Buddy Agent (Creative Addition)
+wellness_agent = autogen.AssistantAgent(
+    name="WellnessBuddy",
+    system_message="You are a friendly companion. Provide motivational quotes or fun facts to keep the elderly engaged.",
+    llm_config={"config_list": config_list}
+)
+
+# User Proxy Agent to Simulate Elderly User
+user_proxy = autogen.UserProxyAgent(
+    name="User",
     human_input_mode="NEVER",
-    code_execution_config=False,
-    function_map={"call_llm": call_custom_llm}
+    max_consecutive_auto_reply=10,
+    code_execution_config=False
 )
 
-# Group Chat setup
-group_chat = autogen.GroupChat(
-    agents=[health_agent, safety_agent, reminder_agent, coordinator_agent],
-    messages=[],
-    max_round=10
-)
+# Function to Generate Voice Reminder
+def generate_voice_reminder(text, filename="reminder.mp3"):
+    tts = gTTS(text=text, lang="en")
+    tts.save(filename)
+    return filename
 
-manager = autogen.GroupChatManager(
-    groupchat=group_chat,
-    llm_config=llm_config
-)
+# Multi-Agent Workflow
+def run_multi_agent_system(user_id):
+    # Health Monitoring
+    health_subset = health_data[health_data["Device-ID/User-ID"] == user_id].iloc[-1]
+    health_prompt = f"Analyze this health data: Heart Rate: {health_subset['Heart Rate']}, BP: {health_subset['Blood Pressure']}, Glucose: {health_subset['Glucose Levels']}. Thresholds breached? {health_subset['Heart Rate Below/Above Threshold (Yes/No)']}, {health_subset['Blood Pressure Below/Above Threshold (Yes/No)']}, {health_subset['Glucose Levels Below/Above Threshold (Yes/No)']}"
+    health_response = call_llm_api(health_prompt, system_message=health_agent.system_message)
 
-# Helper functions for data processing
-def process_health_data(user_id: str) -> str:
-    if health_data.empty or user_id not in health_data["Device-ID/User-ID"].values:
-        return "No health data available"
-    user_data = health_data[health_data["Device-ID/User-ID"] == user_id].iloc[-1]
-    alerts = []
-    if user_data["Heart Rate Below/Above Threshold (Yes/No)"] == "Yes":
-        alerts.append(f"Abnormal heart rate: {user_data['Heart Rate']}")
-    if user_data["Blood Pressure Below/Above Threshold (Yes/No)"] == "Yes":
-        alerts.append(f"Abnormal BP: {user_data['Blood Pressure']}")
-    if user_data["Glucose Levels Below/Above Threshold (Yes/No)"] == "Yes":
-        alerts.append(f"Abnormal glucose: {user_data['Glucose Levels']}")
-    if user_data["SpO₂ Below Threshold (Yes/No)"] == "Yes":
-        alerts.append(f"Low oxygen: {user_data['Oxygen Saturation (SpO₂%)']}")
-    return "\n".join(alerts) if alerts else "All health parameters normal"
+    # Safety Monitoring
+    safety_subset = safety_data[safety_data["Device-ID/User-ID"] == user_id].iloc[-1]
+    safety_prompt = f"Analyze this safety data: Movement: {safety_subset['Movement Activity']}, Fall Detected: {safety_subset['Fall Detected (Yes/No)']}, Inactivity Duration: {safety_subset['Post-Fall Inactivity Duration (Seconds)']} seconds. Should an alert be triggered?"
+    safety_response = call_llm_api(safety_prompt, system_message=safety_agent.system_message)
 
-def process_safety_data(user_id: str) -> str:
-    if safety_data.empty or user_id not in safety_data["Device-ID/User-ID"].values:
-        return "No safety data available"
-    user_data = safety_data[safety_data["Device-ID/User-ID"] == user_id].iloc[-1]
-    if user_data["Fall Detected (Yes/No)"] == "Yes":
-        return f"Fall detected at {user_data['Location']} with impact force {user_data['Impact Force Level']}"
-    elif user_data["Post-Fall Inactivity Duration (Seconds)"] > 300:
-        return f"Unusual inactivity detected at {user_data['Location']} for {user_data['Post-Fall Inactivity Duration (Seconds)']} seconds"
-    return "No safety concerns detected"
+    # Reminder Management
+    reminder_subset = daily_reminders[daily_reminders["Device-ID/User-ID"] == user_id].iloc[-1]
+    reminder_prompt = f"Check this reminder: Type: {reminder_subset['Reminder Type']}, Scheduled Time: {reminder_subset['Scheduled Time']}, Sent: {reminder_subset['Reminder Sent (Yes/No)']}, Acknowledged: {reminder_subset['Acknowledged (Yes/No)']}. Should a reminder be sent now?"
+    reminder_response = call_llm_api(reminder_prompt, system_message=reminder_agent.system_message)
 
-def process_reminder_data(user_id: str) -> str:
-    if reminder_data.empty or user_id not in reminder_data["Device-ID/User-ID"].values:
-        return "No reminder data available"
-    user_data = reminder_data[reminder_data["Device-ID/User-ID"] == user_id].iloc[-1]
-    if user_data["Reminder Sent (Yes/No)"] == "Yes" and user_data["Acknowledged (Yes/No)"] == "No":
-        return f"Missed {user_data['Reminder Type']} reminder scheduled for {user_data['Scheduled Time']}"
-    return "All reminders acknowledged"
+    # Wellness Buddy
+    wellness_prompt = "Provide a motivational quote or fun fact for an elderly person."
+    wellness_response = call_llm_api(wellness_prompt, system_message=wellness_agent.system_message)
 
-# Main execution function
-def monitor_elderly(user_id: str):
-    initial_message = f"""
-    Coordinator: Starting monitoring for user {user_id} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    HealthMonitoringAgent: Please analyze latest health data
-    SafetyMonitoringAgent: Please check safety status
-    ReminderAgent: Please verify reminder compliance
-    """
-    
-    health_status = process_health_data(user_id)
-    safety_status = process_safety_data(user_id)
-    reminder_status = process_reminder_data(user_id)
-    
-    try:
-        manager.initiate_chat(
-            coordinator_agent,
-            message=f"""
-            {initial_message}
-            HealthMonitoringAgent: {health_status}
-            SafetyMonitoringAgent: {safety_status}
-            ReminderAgent: {reminder_status}
-            Coordinator: Please analyze the combined data and recommend actions
-            """
-        )
-        final_response = group_chat.messages[-1]["content"]
-    except Exception as e:
-        final_response = f"Error during agent collaboration: {str(e)}"
-    
-    return final_response
+    # Coordinator Decision
+    coordinator_prompt = f"Health: {health_response}\nSafety: {safety_response}\nReminder: {reminder_response}\nShould caregivers be notified?"
+    coordinator_response = call_llm_api(coordinator_prompt, system_message=coordinator_agent.system_message)
 
-# Example usage
+    return health_response, safety_response, reminder_response, wellness_response, coordinator_response
+
+# Streamlit UI
+def main():
+    st.set_page_config(page_title="ElderCare AI", layout="wide")
+    st.title("🌟 ElderCare AI: Your Smart Companion for Independent Living")
+    st.markdown("A multi-agent system to monitor health, ensure safety, and manage daily routines for the elderly.")
+
+    # Sidebar for User Selection
+    user_id = st.sidebar.selectbox("Select User/Device ID", daily_reminders["Device-ID/User-ID"].unique())
+
+    # Real-Time Dashboard
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("📈 Health Monitoring")
+        health_response, safety_response, reminder_response, wellness_response, coordinator_response = run_multi_agent_system(user_id)
+        st.write(health_response)
+        # Visualization
+        fig, ax = plt.subplots()
+        sns.lineplot(data=health_data[health_data["Device-ID/User-ID"] == user_id], x="Timestamp", y="Heart Rate", ax=ax)
+        st.pyplot(fig)
+
+    with col2:
+        st.subheader("🛡️ Safety Monitoring")
+        st.write(safety_response)
+
+    st.subheader("⏰ Daily Reminders")
+    st.write(reminder_response)
+    if "send a reminder" in reminder_response.lower():
+        reminder_text = f"Reminder: Time for your {daily_reminders[daily_reminders['Device-ID/User-ID'] == user_id].iloc[-1]['Reminder Type']}!"
+        st.audio(generate_voice_reminder(reminder_text))
+
+    st.subheader("😊 Wellness Buddy")
+    st.write(wellness_response)
+
+    st.subheader("📢 Coordinator Updates")
+    st.write(coordinator_response)
+
+    # Gamification: Points for Acknowledging Reminders
+    if st.button("Acknowledge Reminder"):
+        st.success("🎉 +10 Points Earned!")
+
+    # Export Report
+    if st.button("Generate Caregiver Report"):
+        report = f"Health: {health_response}\nSafety: {safety_response}\nReminders: {reminder_response}\nCoordinator: {coordinator_response}"
+        st.download_button("Download Report", report, file_name=f"report_{user_id}.txt")
+
 if __name__ == "__main__":
-    user_id = "D1000"
-    result = monitor_elderly(user_id)
-    print(f"Monitoring result for {user_id}:\n{result}")
+    main()

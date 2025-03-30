@@ -356,6 +356,8 @@ function loadUserData() {
 function updateHealthData(data) {
     console.log('Health data:', data);
     const badge = document.getElementById('health-status-badge');
+    
+    // Update badge
     if (data.alerts && data.alerts.length > 0) {
         badge.className = 'badge badge-danger';
         badge.textContent = 'Alert';
@@ -363,17 +365,70 @@ function updateHealthData(data) {
         badge.className = 'badge badge-success';
         badge.textContent = 'Normal';
     }
+
+    // Update health metrics directly from backend data
+    if (data.user_id) {
+        // Fetch the most recent health data for this user from the CSV (via backend)
+        const userData = data;
+        const timestamp = new Date(data.timestamp);
+
+        // Extract metrics from the most recent health data (assuming backend returns these)
+        // These are based on your health_monitoring.csv structure and monitor_health response
+        const heartRate = data.alerts ? 
+            parseInt(data.alerts.find(a => a.includes("Heart rate"))?.match(/\d+/)?.[0] || 0) : 
+            parseInt(userData.status === "All health metrics within normal range" ? 85 : 0); // Default if no alerts
+        const bpMatch = data.alerts ? 
+            data.alerts.find(a => a.includes("blood pressure"))?.match(/(\d+)\/(\d+)/) : null;
+        const bloodPressure = bpMatch ? `${bpMatch[1]}/${bpMatch[2]} mmHg` : "120/80 mmHg"; // Default if no alerts
+        const glucose = data.alerts ? 
+            parseInt(data.alerts.find(a => a.includes("Glucose"))?.match(/\d+/)?.[0] || 0) : 100; // Default
+        const spo2 = data.alerts ? 
+            parseInt(data.alerts.find(a => a.includes("Oxygen"))?.match(/\d+/)?.[0] || 0) : 98; // Default
+
+        document.getElementById('heart-rate').textContent = `${heartRate || 0} bpm`;
+        document.getElementById('blood-pressure').textContent = bloodPressure || "N/A";
+        document.getElementById('glucose-level').textContent = `${glucose || 0} mg/dL`;
+        document.getElementById('oxygen-saturation').textContent = `${spo2 || 0}%`;
+
+        // Update health chart with a single point for simplicity
+        healthChart.data.labels = [timestamp.toLocaleTimeString()];
+        healthChart.data.datasets[0].data = [heartRate || 0];  // Heart Rate
+        healthChart.data.datasets[1].data = [glucose || 0];    // Glucose
+        healthChart.update();
+    }
 }
 
 function updateSafetyData(data) {
     console.log('Safety data:', data);
     const badge = document.getElementById('safety-status-badge');
+    
+    // Update badge
     if (data.alert) {
         badge.className = 'badge badge-danger';
         badge.textContent = data.alert;
     } else {
         badge.className = 'badge badge-success';
         badge.textContent = 'Safe';
+    }
+
+    // Update safety info
+    if (data.user_id) {
+        document.getElementById('current-location').textContent = data.location || 'Unknown';
+        document.getElementById('last-activity').textContent = data.last_activity || 'No activity';
+
+        // Calculate time since last movement correctly
+        const timestamp = new Date(data.timestamp);
+        const now = new Date();
+        const timeDiffMinutes = Math.round((now - timestamp) / 60000); // Difference in minutes
+        document.getElementById('last-movement').textContent = 
+            timeDiffMinutes >= 0 ? `${timeDiffMinutes} minutes ago` : 'In the future';
+
+        // Update activity chart with user-specific data
+        const activityValue = data.inactivity_duration ? 
+            parseFloat(data.inactivity_duration.split(' ')[0]) : 5; // Default to 5 if no inactivity
+        activityChart.data.labels = [timestamp.toLocaleTimeString()];
+        activityChart.data.datasets[0].data = [activityValue];
+        activityChart.update();
     }
 }
 
