@@ -395,11 +395,20 @@
             const badge = document.getElementById("reminders-badge");
             const remindersList = document.getElementById("reminders-list");
 
-            if (data.upcoming_reminders && data.upcoming_reminders.length > 0) {
+            // Debug logging to see what's coming from the backend
+            console.log("Reminders data received:", data);
+
+            // Check if reminders exist in the nested structure
+            const upcomingReminders = data.upcoming_reminders || 
+                                    (data.reminders && data.reminders.upcoming_reminders) || 
+                                    [];
+            
+            if (Array.isArray(upcomingReminders) && upcomingReminders.length > 0) {
                 badge.className = "badge bg-yellow-100 text-yellow-800";
-                badge.textContent = `${data.upcoming_reminders.length} Upcoming`;
+                badge.textContent = `${upcomingReminders.length} Upcoming`;
                 remindersList.innerHTML = "";
-                data.upcoming_reminders.forEach(reminder => {
+                
+                upcomingReminders.forEach(reminder => {
                     const li = document.createElement("li");
                     li.className = "status-item p-3 rounded-lg hover:bg-gray-50";
                     li.innerHTML = `
@@ -561,9 +570,37 @@
             })
             .then(response => response.json())
             .then(data => {
+                // Convert markdown to HTML for better rendering
+                let processedText = data.analysis || "No analysis returned";
+                
+                // Process headers
+                processedText = processedText.replace(/### (.*?)\n/g, '<h3 class="text-lg font-semibold mt-3 mb-2">$1</h3>');
+                processedText = processedText.replace(/## (.*?)\n/g, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>');
+                processedText = processedText.replace(/# (.*?)\n/g, '<h1 class="text-2xl font-bold mt-4 mb-3">$1</h1>');
+                
+                // Process bold and italic
+                processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                processedText = processedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                
+                // Process lists
+                processedText = processedText.replace(/- (.*?)(\n|$)/g, '<li class="ml-4">$1</li>');
+                processedText = processedText.replace(/\d+\. (.*?)(\n|$)/g, '<li class="ml-4 list-decimal">$1</li>');
+                
+                // Wrap lists in ul/ol tags
+                const hasListItems = processedText.includes('<li');
+                if (hasListItems) {
+                    processedText = '<ul class="list-disc mb-3 pl-2">' + processedText + '</ul>';
+                }
+                
+                // Process paragraphs
+                processedText = processedText.replace(/\n\n/g, '</p><p class="mb-2">');
+                
+                // Final wrapping
+                processedText = '<div class="analysis-result">' + processedText + '</div>';
+                
                 document.getElementById("analysis-content").innerHTML = `
-                    <p class="font-medium text-gray-800 mb-2">Analysis Result:</p>
-                    <p class="text-gray-600">${data.analysis || "No analysis returned"}</p>
+                    <p class="font-medium text-gray-800 mb-3">Analysis Result:</p>
+                    <div class="text-gray-700 analysis-content overflow-auto max-h-64 p-3 rounded bg-gray-50">${processedText}</div>
                 `;
             })
             .catch(error => {

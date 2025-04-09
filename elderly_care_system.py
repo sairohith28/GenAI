@@ -382,29 +382,51 @@ class ElderCareSystem:
 
         # Construct a better structured prompt for the LLM
         initial_prompt = f"""
-        Analyze the situation for elderly user {user_id} with this query: {query}
+        You are an elderly care system AI assistant providing analysis for caregivers.
         
+        Analyze the health and safety data for elderly user {user_id} with this query: {query}
+        
+        DATA:
         Health Status: {json.dumps(health_status, indent=2, cls=NumpyEncoder)}
         Safety Status: {json.dumps(safety_status, indent=2, cls=NumpyEncoder)}
         Upcoming Reminders: {json.dumps(reminders, indent=2, cls=NumpyEncoder)}
         
-        Please provide a well-formatted analysis that:
-        1. Starts with a clear summary of the user's current status
-        2. Breaks down key health metrics with normal ranges
-        3. Lists safety concerns or observations
-        4. Summarizes upcoming reminders
-        5. Provides specific, actionable recommendations
+        RESPONSE FORMAT:
+        Your response MUST be formatted in clean, well-structured Markdown with these sections:
         
-        Format your response using markdown with clear headings, bullet points, and sections.
-        Keep your analysis concise and avoid repeating raw data.
+        # Summary
+        [Brief overview of user's current status - 2-3 sentences]
+        
+        ## Health Analysis
+        - Heart Rate: [value] ([normal/high/low]) - Normal range: 60-100 bpm
+        - Blood Pressure: [value] ([normal/high/low]) - Normal range: 90-130/60-80 mmHg
+        - Glucose: [value] ([normal/high/low]) - Normal range: 70-140 mg/dL
+        - SpO2: [value] ([normal/low]) - Normal range: >94%
+        
+        ## Safety Status
+        - Current location: [location]
+        - Recent activity: [activity details]
+        - Movement status: [active/inactive] - [details]
+        
+        ## Upcoming Reminders
+        - [List upcoming reminders with times]
+        
+        ## Recommendations
+        1. [First specific recommendation]
+        2. [Second specific recommendation]
+        3. [Additional recommendations as needed]
+        
+        Make sure ALL sections are included in your response, even if some data is missing.
+        Use bullet points and numbered lists for clarity.
+        Focus on providing actionable insights and clear explanations.
         """
 
         # Directly call the LLM API instead of using autogen's group chat
         try:
             analysis = call_llm_api(
                 prompt=initial_prompt,
-                system_message="You are a professional healthcare coordinator for an elderly care system. Provide clear, well-structured analyses using markdown formatting with headings, bullet points and concise paragraphs. Focus on key insights and actionable recommendations.",
-                max_tokens=600  # Increased to allow for a detailed response
+                system_message="You are a professional healthcare coordinator specializing in elderly care. Always provide well-structured responses using proper Markdown formatting with headers, bullet points, and numbered lists. Focus on key insights and actionable recommendations.",
+                max_tokens=800  # Increased to allow for a detailed response
             )
             return {
                 "user_id": user_id,
