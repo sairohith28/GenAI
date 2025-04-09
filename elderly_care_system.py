@@ -380,7 +380,7 @@ class ElderCareSystem:
         safety_status = self.safety_agent.monitor_safety(user_id)
         reminders = self.reminder_agent.get_upcoming_reminders(user_id)
 
-        # Construct the prompt for the LLM
+        # Construct a better structured prompt for the LLM
         initial_prompt = f"""
         Analyze the situation for elderly user {user_id} with this query: {query}
         
@@ -388,15 +388,23 @@ class ElderCareSystem:
         Safety Status: {json.dumps(safety_status, indent=2, cls=NumpyEncoder)}
         Upcoming Reminders: {json.dumps(reminders, indent=2, cls=NumpyEncoder)}
         
-        Provide a comprehensive analysis and recommendation based on the above data.
+        Please provide a well-formatted analysis that:
+        1. Starts with a clear summary of the user's current status
+        2. Breaks down key health metrics with normal ranges
+        3. Lists safety concerns or observations
+        4. Summarizes upcoming reminders
+        5. Provides specific, actionable recommendations
+        
+        Format your response using markdown with clear headings, bullet points, and sections.
+        Keep your analysis concise and avoid repeating raw data.
         """
 
         # Directly call the LLM API instead of using autogen's group chat
         try:
             analysis = call_llm_api(
                 prompt=initial_prompt,
-                system_message="You are a coordinator for an elderly care system. Provide a clear, concise analysis and recommendation.",
-                max_tokens=300  # Increased to allow for a detailed response
+                system_message="You are a professional healthcare coordinator for an elderly care system. Provide clear, well-structured analyses using markdown formatting with headings, bullet points and concise paragraphs. Focus on key insights and actionable recommendations.",
+                max_tokens=600  # Increased to allow for a detailed response
             )
             return {
                 "user_id": user_id,
