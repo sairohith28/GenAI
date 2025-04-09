@@ -118,6 +118,51 @@
         
         <!-- Dashboard Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Multi-Agent Coordination Card (New) -->
+            <div class="card bg-white p-6 lg:col-span-2">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 rounded-lg bg-indigo-100 text-indigo-600">
+                            <i class="fas fa-robot text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-semibold text-gray-800">Multi-Agent Coordination</h2>
+                    </div>
+                    <span id="priority-badge" class="badge bg-gray-100 text-gray-800">Analyzing</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">Priority Assessment</p>
+                        <p id="priority-level" class="metric-value">Analyzing...</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">Active Agents</p>
+                        <p id="active-agents" class="metric-value">5 Agents</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">System Response Time</p>
+                        <p id="system-response" class="metric-value">0.5s</p>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h3 class="font-medium text-gray-800 mb-2">Recommended Actions:</h3>
+                    <ul id="recommended-actions" class="list-disc pl-5 space-y-1 text-gray-700">
+                        <li>Analyzing user data...</li>
+                    </ul>
+                </div>
+                
+                <div class="p-3 rounded-lg bg-indigo-50 border border-indigo-100">
+                    <div class="flex items-center gap-2 text-indigo-800 mb-2">
+                        <i class="fas fa-lightbulb"></i>
+                        <span class="font-medium">Agent Communication Log</span>
+                    </div>
+                    <div id="agent-communication" class="text-sm text-gray-700 max-h-24 overflow-auto">
+                        <p>Initializing multi-agent communication...</p>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Health Monitoring Card -->
             <div class="card bg-white p-6">
                 <div class="flex justify-between items-center mb-6">
@@ -347,13 +392,31 @@
             fetch(`${baseUrl}/api/user/${selectedUserId}/comprehensive-check`)
                 .then(response => response.json())
                 .then(data => {
+                    // Update all UI components with the new data
                     updateHealthData(data.health_status);
                     updateSafetyData(data.safety_status);
                     updateRemindersData(data.reminders);
                     updateCharts(data);
+                    
+                    // New: Update multi-agent coordination data
+                    if (data.coordinator_assessment) {
+                        updateCoordinationData(data.coordinator_assessment);
+                    }
+                    
+                    // Log agent communication if available
+                    logAgentCommunication("Health Agent", "Monitoring vital signs");
+                    logAgentCommunication("Safety Agent", "Analyzing movement patterns");
+                    logAgentCommunication("Reminder Agent", "Checking upcoming tasks");
+                    logAgentCommunication("Coordinator", "Integrating multi-agent data");
+                    
+                    // Update system metrics
+                    if (data.system_metrics) {
+                        updateSystemMetrics(data.system_metrics);
+                    }
                 })
                 .catch(error => {
                     console.error("Comprehensive fetch error:", error);
+                    showNotification("Error loading user data", "error");
                 });
         }
 
@@ -372,6 +435,40 @@
             document.getElementById("blood-pressure").textContent = data.blood_pressure || "N/A";
             document.getElementById("glucose-level").textContent = `${data.glucose || 0} mg/dL`;
             document.getElementById("oxygen-saturation").textContent = `${data.spo2 || 0}%`;
+            
+            // Log health trends if available
+            if (data.trend_analysis && typeof data.trend_analysis !== 'string') {
+                let trendMessage = "Analyzing health data trends: ";
+                
+                if (data.trend_analysis.heart_rate) {
+                    trendMessage += `Heart rate ${data.trend_analysis.heart_rate}`;
+                }
+                
+                if (data.trend_analysis.blood_pressure) {
+                    trendMessage += `, Blood pressure ${data.trend_analysis.blood_pressure}`;
+                }
+                
+                if (data.trend_analysis.glucose) {
+                    trendMessage += `, Glucose ${data.trend_analysis.glucose}`;
+                }
+                
+                logAgentCommunication("Health Agent", trendMessage);
+            }
+            
+            // Show alert details if present
+            if (data.alerts && data.alerts.length > 0) {
+                data.alerts.forEach(alert => {
+                    logAgentCommunication("Health Agent", `Alert: ${alert}`);
+                });
+                
+                if (data.recommendation) {
+                    logAgentCommunication("Health Agent", `Recommendation: ${
+                        data.recommendation.length > 100 
+                            ? data.recommendation.substring(0, 100) + "..." 
+                            : data.recommendation
+                    }`);
+                }
+            }
         }
 
         // Update safety data
@@ -388,6 +485,29 @@
             document.getElementById("current-location").textContent = data.location || "Unknown";
             document.getElementById("last-activity").textContent = data.last_activity || data["Movement Activity"] || "Unknown";
             document.getElementById("last-movement").textContent = moment(data.timestamp).fromNow();
+            
+            // Log movement patterns if available
+            if (data.movement_analysis && typeof data.movement_analysis !== 'string') {
+                logAgentCommunication("Safety Agent", data.movement_analysis.insight || "Analyzing movement patterns");
+            }
+            
+            // Log location patterns if available
+            if (data.location_analysis && typeof data.location_analysis !== 'string') {
+                logAgentCommunication("Safety Agent", data.location_analysis.insight || "Analyzing location patterns");
+            }
+            
+            // Show alert details if present
+            if (data.alert) {
+                logAgentCommunication("Safety Agent", `Alert: ${data.alert}`);
+                
+                if (data.recommendation) {
+                    logAgentCommunication("Safety Agent", `Recommendation: ${
+                        data.recommendation.length > 100 
+                            ? data.recommendation.substring(0, 100) + "..." 
+                            : data.recommendation
+                    }`);
+                }
+            }
         }
 
         // Update reminders data
@@ -395,11 +515,20 @@
             const badge = document.getElementById("reminders-badge");
             const remindersList = document.getElementById("reminders-list");
 
-            if (data.upcoming_reminders && data.upcoming_reminders.length > 0) {
+            // Debug logging to see what's coming from the backend
+            console.log("Reminders data received:", data);
+
+            // Check if reminders exist in the nested structure
+            const upcomingReminders = data.upcoming_reminders || 
+                                    (data.reminders && data.reminders.upcoming_reminders) || 
+                                    [];
+            
+            if (Array.isArray(upcomingReminders) && upcomingReminders.length > 0) {
                 badge.className = "badge bg-yellow-100 text-yellow-800";
-                badge.textContent = `${data.upcoming_reminders.length} Upcoming`;
+                badge.textContent = `${upcomingReminders.length} Upcoming`;
                 remindersList.innerHTML = "";
-                data.upcoming_reminders.forEach(reminder => {
+                
+                upcomingReminders.forEach(reminder => {
                     const li = document.createElement("li");
                     li.className = "status-item p-3 rounded-lg hover:bg-gray-50";
                     li.innerHTML = `
@@ -561,9 +690,37 @@
             })
             .then(response => response.json())
             .then(data => {
+                // Convert markdown to HTML for better rendering
+                let processedText = data.analysis || "No analysis returned";
+                
+                // Process headers
+                processedText = processedText.replace(/### (.*?)\n/g, '<h3 class="text-lg font-semibold mt-3 mb-2">$1</h3>');
+                processedText = processedText.replace(/## (.*?)\n/g, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>');
+                processedText = processedText.replace(/# (.*?)\n/g, '<h1 class="text-2xl font-bold mt-4 mb-3">$1</h1>');
+                
+                // Process bold and italic
+                processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                processedText = processedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                
+                // Process lists
+                processedText = processedText.replace(/- (.*?)(\n|$)/g, '<li class="ml-4">$1</li>');
+                processedText = processedText.replace(/\d+\. (.*?)(\n|$)/g, '<li class="ml-4 list-decimal">$1</li>');
+                
+                // Wrap lists in ul/ol tags
+                const hasListItems = processedText.includes('<li');
+                if (hasListItems) {
+                    processedText = '<ul class="list-disc mb-3 pl-2">' + processedText + '</ul>';
+                }
+                
+                // Process paragraphs
+                processedText = processedText.replace(/\n\n/g, '</p><p class="mb-2">');
+                
+                // Final wrapping
+                processedText = '<div class="analysis-result">' + processedText + '</div>';
+                
                 document.getElementById("analysis-content").innerHTML = `
-                    <p class="font-medium text-gray-800 mb-2">Analysis Result:</p>
-                    <p class="text-gray-600">${data.analysis || "No analysis returned"}</p>
+                    <p class="font-medium text-gray-800 mb-3">Analysis Result:</p>
+                    <div class="text-gray-700 analysis-content overflow-auto max-h-64 p-3 rounded bg-gray-50">${processedText}</div>
                 `;
             })
             .catch(error => {
@@ -648,6 +805,266 @@
         document.addEventListener("DOMContentLoaded", function() {
             loadUserData();
         });
+
+        // Update coordination data from coordinator agent
+        function updateCoordinationData(coordinationData) {
+            // Set priority badge based on priority level
+            const priorityBadge = document.getElementById("priority-badge");
+            const priorityLevel = coordinationData.priority_level || "low";
+            
+            // Update badge color based on priority level
+            switch(priorityLevel) {
+                case "critical":
+                    priorityBadge.className = "badge bg-red-100 text-red-800";
+                    break;
+                case "high":
+                    priorityBadge.className = "badge bg-orange-100 text-orange-800";
+                    break;
+                case "medium":
+                    priorityBadge.className = "badge bg-yellow-100 text-yellow-800";
+                    break;
+                default:
+                    priorityBadge.className = "badge bg-green-100 text-green-800";
+            }
+            
+            priorityBadge.textContent = priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1);
+            
+            // Update priority level display
+            document.getElementById("priority-level").textContent = priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1);
+            
+            // Update recommended actions
+            const actionsList = document.getElementById("recommended-actions");
+            actionsList.innerHTML = "";
+            
+            if (coordinationData.recommended_actions && coordinationData.recommended_actions.length > 0) {
+                coordinationData.recommended_actions.forEach(action => {
+                    const li = document.createElement("li");
+                    li.textContent = action;
+                    actionsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement("li");
+                li.textContent = "No actions required at this time";
+                actionsList.appendChild(li);
+            }
+        }
+        
+        // Update system metrics
+        function updateSystemMetrics(metrics) {
+            if (metrics.processing_time) {
+                document.getElementById("system-response").textContent = `${metrics.processing_time.toFixed(2)}s`;
+            }
+            
+            // Display uptime if available
+            if (metrics.uptime) {
+                const hours = Math.floor(metrics.uptime);
+                const minutes = Math.round((metrics.uptime - hours) * 60);
+                const uptimeText = `${hours}h ${minutes}m`;
+                document.getElementById("active-agents").textContent = `5 Agents (${uptimeText})`;
+            }
+        }
+        
+        // Log agent communication for visualization
+        function logAgentCommunication(agentName, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const commLog = document.getElementById("agent-communication");
+            
+            // Create styled log entry
+            const logEntry = document.createElement("div");
+            logEntry.className = "mb-1 pb-1 border-b border-indigo-50";
+            
+            let icon = "fa-robot";
+            let color = "text-indigo-600";
+            
+            switch(agentName) {
+                case "Health Agent":
+                    icon = "fa-heartbeat";
+                    color = "text-red-600";
+                    break;
+                case "Safety Agent":
+                    icon = "fa-shield-alt";
+                    color = "text-green-600";
+                    break;
+                case "Reminder Agent":
+                    icon = "fa-bell";
+                    color = "text-yellow-600";
+                    break;
+                case "Coordinator":
+                    icon = "fa-sitemap";
+                    color = "text-purple-600";
+                    break;
+            }
+            
+            logEntry.innerHTML = `
+                <div class="flex items-start gap-2">
+                    <i class="fas ${icon} ${color} mt-1"></i>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium ${color}">${agentName}</span>
+                            <span class="text-gray-400 text-xs">${timestamp}</span>
+                        </div>
+                        <p class="text-gray-600 text-xs">${message}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Clear if too many entries
+            if (commLog.children.length > 5) {
+                commLog.innerHTML = '';
+            }
+            
+            // Add to log
+            commLog.appendChild(logEntry);
+            
+            // Scroll to bottom
+            commLog.scrollTop = commLog.scrollHeight;
+        }
+        
+        // Update health data (enhanced to show trend analysis)
+        function updateHealthData(data) {
+            const badge = document.getElementById("health-status-badge");
+            if (data.alerts && data.alerts.length > 0) {
+                badge.className = "badge bg-red-100 text-red-800";
+                badge.textContent = "Alert";
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "Normal";
+            }
+            
+            // Update metrics
+            document.getElementById("heart-rate").textContent = `${data.heart_rate || 0} bpm`;
+            document.getElementById("blood-pressure").textContent = data.blood_pressure || "N/A";
+            document.getElementById("glucose-level").textContent = `${data.glucose || 0} mg/dL`;
+            document.getElementById("oxygen-saturation").textContent = `${data.spo2 || 0}%`;
+            
+            // Log health trends if available
+            if (data.trend_analysis && typeof data.trend_analysis !== 'string') {
+                let trendMessage = "Analyzing health data trends: ";
+                
+                if (data.trend_analysis.heart_rate) {
+                    trendMessage += `Heart rate ${data.trend_analysis.heart_rate}`;
+                }
+                
+                if (data.trend_analysis.blood_pressure) {
+                    trendMessage += `, Blood pressure ${data.trend_analysis.blood_pressure}`;
+                }
+                
+                if (data.trend_analysis.glucose) {
+                    trendMessage += `, Glucose ${data.trend_analysis.glucose}`;
+                }
+                
+                logAgentCommunication("Health Agent", trendMessage);
+            }
+            
+            // Show alert details if present
+            if (data.alerts && data.alerts.length > 0) {
+                data.alerts.forEach(alert => {
+                    logAgentCommunication("Health Agent", `Alert: ${alert}`);
+                });
+                
+                if (data.recommendation) {
+                    logAgentCommunication("Health Agent", `Recommendation: ${
+                        data.recommendation.length > 100 
+                            ? data.recommendation.substring(0, 100) + "..." 
+                            : data.recommendation
+                    }`);
+                }
+            }
+        }
+        
+        // Update safety data (enhanced to show movement patterns)
+        function updateSafetyData(data) {
+            const badge = document.getElementById("safety-status-badge");
+            if (data.alert) {
+                badge.className = "badge bg-red-100 text-red-800";
+                badge.textContent = data.alert;
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "Safe";
+            }
+            
+            document.getElementById("current-location").textContent = data.location || "Unknown";
+            document.getElementById("last-activity").textContent = data.last_activity || "Unknown";
+            document.getElementById("last-movement").textContent = moment(data.timestamp).fromNow();
+            
+            // Log movement patterns if available
+            if (data.movement_analysis && typeof data.movement_analysis !== 'string') {
+                logAgentCommunication("Safety Agent", data.movement_analysis.insight || "Analyzing movement patterns");
+            }
+            
+            // Log location patterns if available
+            if (data.location_analysis && typeof data.location_analysis !== 'string') {
+                logAgentCommunication("Safety Agent", data.location_analysis.insight || "Analyzing location patterns");
+            }
+            
+            // Show alert details if present
+            if (data.alert) {
+                logAgentCommunication("Safety Agent", `Alert: ${data.alert}`);
+                
+                if (data.recommendation) {
+                    logAgentCommunication("Safety Agent", `Recommendation: ${
+                        data.recommendation.length > 100 
+                            ? data.recommendation.substring(0, 100) + "..." 
+                            : data.recommendation
+                    }`);
+                }
+            }
+        }
+        
+        // Update reminders data (enhanced with adherence analysis)
+        function updateRemindersData(data) {
+            const badge = document.getElementById("reminders-badge");
+            const remindersList = document.getElementById("reminders-list");
+
+            // Check if reminders exist in the nested structure
+            const upcomingReminders = data.upcoming_reminders || 
+                                    (data.reminders && data.reminders.upcoming_reminders) || 
+                                    [];
+            
+            if (Array.isArray(upcomingReminders) && upcomingReminders.length > 0) {
+                badge.className = "badge bg-yellow-100 text-yellow-800";
+                badge.textContent = `${upcomingReminders.length} Upcoming`;
+                remindersList.innerHTML = "";
+                
+                upcomingReminders.forEach(reminder => {
+                    const li = document.createElement("li");
+                    li.className = "status-item p-3 rounded-lg hover:bg-gray-50";
+                    li.innerHTML = `
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="font-medium text-gray-800">${reminder.type}</div>
+                            <div class="text-sm text-gray-500">In ${reminder.time_until} (${reminder.scheduled_time})</div>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            ${reminder.already_sent ? "Sent" : "Pending"} - 
+                            ${reminder.acknowledged ? "Acknowledged" : "Not acknowledged"}
+                        </div>
+                    `;
+                    remindersList.appendChild(li);
+                });
+                
+                // Show reminder message if available
+                if (data.recommendation) {
+                    logAgentCommunication("Reminder Agent", `Message: ${data.recommendation}`);
+                }
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "None";
+                remindersList.innerHTML = '<li class="status-item p-3 rounded-lg hover:bg-gray-50 text-gray-600">No upcoming reminders.</li>';
+            }
+            
+            // Log adherence analysis if available
+            if (data.adherence_analysis && typeof data.adherence_analysis === 'object' && data.adherence_analysis.insight) {
+                logAgentCommunication("Reminder Agent", `Adherence: ${data.adherence_analysis.insight}`);
+                
+                if (data.personalized_note) {
+                    logAgentCommunication("Reminder Agent", `Personalized Note: ${
+                        data.personalized_note.length > 100 
+                            ? data.personalized_note.substring(0, 100) + "..." 
+                            : data.personalized_note
+                    }`);
+                }
+            }
+        }
     </script>
 </body>
 </html>

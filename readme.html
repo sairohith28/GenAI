@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sai Rohith Vulapu - Data Scientist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+        }
+        
+        .tech-icon {
+            transition: all 0.3s ease;
+        }
+        
+        .tech-icon:hover {
+            transform: translateY(-5px) scale(1.1);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .typewriter h1 {
+            overflow: hidden;
+            border-right: .15em solid #6366f1;
+            white-space: nowrap;
+            margin: 0 auto;
+            letter-spacing: .15em;
+            animation: 
+                typing 3.5s steps(40, end),
+                blink-caret .75s step-end infinite;
+        }
+        
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #6366f1; }
+        }
+        
+        .wave {
+            animation-name: wave-animation;
+            animation-duration: 2.5s;
+            animation-iteration-count: infinite;
+            transform-origin: 70% 70%;
+            display: inline-block;
+        }
+        
+        @keyframes wave-animation {
+            0% { transform: rotate(0deg); }
+            10% { transform: rotate(14deg); }
+            20% { transform: rotate(-8deg); }
+            30% { transform: rotate(14deg); }
+            40% { transform: rotate(-4deg); }
+            50% { transform: rotate(10deg); }
+            60% { transform: rotate(0deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="gradient-bg text-white py-20 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <div class="typewriter mb-6">
+                        <h1 class="text-4xl md:text-5xl font-bold mb-4">Hi <span class="wave">👋</span>, I'm Sai Rohith Vulapu</h1>
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-semibold mb-6">A passionate aspiring Data Scientist from India</h2>
+                    <p class="text-lg mb-8">Specializing in Deep Learning, Computer Vision, and Neural Networks research.</p>
+                    <div class="flex space-x-4">
+                        <a href="https://www.linkedin.com/in/sai-rohith-vulapu/" target="_blank" class="bg-white text-indigo-600 px-6 py-3 rounded-full font-medium hover:bg-indigo-100 transition duration-300 flex items-center">
+                            <i class="fab fa-linkedin-in mr-2"></i> Connect
+                        </a>
+                        <a href="https://github.com/sairohith28" target="_blank" class="bg-indigo-800 text-white px-6 py-3 rounded-full font-medium hover:bg-indigo-900 transition duration-300 flex items-center">
+                            <i class="fab fa-github mr-2"></i> GitHub
+                        </a>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex justify-center">
+                    <div class="relative">
+                        <div class="w-64 h-64 md:w-80 md:h-80 bg-indigo-200 rounded-full overflow-hidden border-4 border-white shadow-xl">
+                            <img src="https://media.giphy.com/media/7c8QeB0VMddFOuu4iR/giphy.gif" alt="Coding" class="w-full h-full object-cover">
+                        </div>
+                        <div class="absolute -bottom-5 -right-5 bg-white rounded-full p-3 shadow-lg">
+                            <div class="bg-indigo-600 text-white rounded-full p-3">
+                                <i class="fas fa-code text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Section -->
+    <div class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">About Me</h2>
+                <div class="w-20 h-1 bg-indigo-600 mx-auto"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-gray-50 p-8 rounded-xl card-hover">
+                    <h3 class="text-xl font-semibold mb-4 text-indigo-600">Current Focus</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 h-6 w-6 text-indigo-600">
+                                <i class="fas fa-code-branch"></i>
+                            </div>
+                            <p class="ml-3 text-gray-700">Working on <span class="font-medium">Semantic Segmentation</span> projects</p>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 h-6 w-6 text-indigo-600">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <p class="ml-3 text-gray-700">Learning <span class="font-medium">GCP and Hadoop</span> for big data solutions</p>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 h-6 w-6 text-indigo-600">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <p class="ml-3 text-gray-700">Looking to collaborate on <span class="font-medium">Neural Networks research</span></p>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="bg-gray-50 p-8 rounded-xl card-hover">
+                    <h3 class="text-xl font-semibold mb-4 text-indigo-600">Quick Facts</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 h-6 w-6 text-indigo-600">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <p class="ml-3 text-gray-700">All projects available at <a href="https://github.com/sairohith28" target="_blank" class="text-indigo-600 hover:underline">github.com/sairohith28</a></p>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 h-6 w-6 text-indigo-600">
+                                <i class="fas fa-pen-fancy"></i>
+                            </div>
+                            <p class="ml-3 text-gray-700">Writing articles on <a href="https://medium.com/@vulapusairohith28" target="_blank" class="text-indigo-600 hover:underline">Medium</a></p>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="flex-shrink-0 h-6 w-6 text-indigo-600">
+                                <i class="fas fa-lightbulb"></i>
+                            </div>
+                            <p class="ml-3 text-gray-700">Fun fact: <span class="italic">"Future unfolds, past escapes, seize today."</span></p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills Section -->
+    <div class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Skills & Technologies</h2>
+                <div class="w-20 h-1 bg-indigo-600 mx-auto"></div>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                <!-- Tech Icons -->
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://cdn.worldvectorlogo.com/logos/arduino-1.svg" alt="Arduino" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">Arduino</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" alt="AWS" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">AWS</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" alt="Python" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">Python</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://www.vectorlogo.zone/logos/tensorflow/tensorflow-icon.svg" alt="TensorFlow" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">TensorFlow</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Scikit_learn_logo_small.svg" alt="Scikit-learn" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">Scikit-learn</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://www.vectorlogo.zone/logos/opencv/opencv-icon.svg" alt="OpenCV" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">OpenCV</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original-wordmark.svg" alt="Docker" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">Docker</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://www.vectorlogo.zone/logos/google_cloud/google_cloud-icon.svg" alt="GCP" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">Google Cloud</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/mysql/mysql-original-wordmark.svg" alt="MySQL" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">MySQL</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://raw.githubusercontent.com/devicons/devicon/2ae2a900d2f041da66e950e4d48052658d850630/icons/pandas/pandas-original.svg" alt="Pandas" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">Pandas</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://seaborn.pydata.org/_images/logo-mark-lightbg.svg" alt="Seaborn" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">Seaborn</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm text-center tech-icon card-hover">
+                    <img src="https://www.vectorlogo.zone/logos/tailwindcss/tailwindcss-icon.svg" alt="Tailwind CSS" class="h-12 mx-auto mb-3">
+                    <p class="font-medium">Tailwind CSS</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connect Section -->
+    <div class="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Let's Connect</h2>
+                <div class="w-20 h-1 bg-indigo-600 mx-auto"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-indigo-50 p-8 rounded-xl text-center card-hover">
+                    <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fab fa-linkedin-in text-indigo-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">LinkedIn</h3>
+                    <p class="text-gray-600 mb-4">Professional network</p>
+                    <a href="https://www.linkedin.com/in/sai-rohith-vulapu/" target="_blank" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-700 transition duration-300">Connect</a>
+                </div>
+                
+                <div class="bg-indigo-50 p-8 rounded-xl text-center card-hover">
+                    <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fab fa-github text-indigo-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">GitHub</h3>
+                    <p class="text-gray-600 mb-4">Code repositories</p>
+                    <a href="https://github.com/sairohith28" target="_blank" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-700 transition duration-300">View Profile</a>
+                </div>
+                
+                <div class="bg-indigo-50 p-8 rounded-xl text-center card-hover">
+                    <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-envelope text-indigo-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Email</h3>
+                    <p class="text-gray-600 mb-4">Get in touch</p>
+                    <a href="mailto:vulapusairohith28@gmail.com" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-700 transition duration-300">Send Email</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-900 text-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">GitHub Statistics</h2>
+                <div class="w-20 h-1 bg-indigo-400 mx-auto"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-gray-800 p-8 rounded-xl text-center card-hover">
+                    <div class="text-5xl font-bold text-indigo-400 mb-2" id="repoCount">50+</div>
+                    <h3 class="text-xl font-semibold mb-2">Repositories</h3>
+                    <p class="text-gray-400">Projects and contributions</p>
+                </div>
+                
+                <div class="bg-gray-800 p-8 rounded-xl text-center card-hover">
+                    <div class="text-5xl font-bold text-indigo-400 mb-2" id="commitCount">1000+</div>
+                    <h3 class="text-xl font-semibold mb-2">Commits</h3>
+                    <p class="text-gray-400">Code contributions</p>
+                </div>
+                
+                <div class="bg-gray-800 p-8 rounded-xl text-center card-hover">
+                    <div class="text-5xl font-bold text-indigo-400 mb-2" id="starCount">100+</div>
+                    <h3 class="text-xl font-semibold mb-2">Stars</h3>
+                    <p class="text-gray-400">Project recognition</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-xl font-bold">Sai Rohith Vulapu</h3>
+                    <p class="text-gray-400">Data Scientist | Deep Learning Engineer</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="https://www.linkedin.com/in/sai-rohith-vulapu/" target="_blank" class="text-gray-400 hover:text-white transition duration-300">
+                        <i class="fab fa-linkedin-in text-xl"></i>
+                    </a>
+                    <a href="https://github.com/sairohith28" target="_blank" class="text-gray-400 hover:text-white transition duration-300">
+                        <i class="fab fa-github text-xl"></i>
+                    </a>
+                    <a href="https://www.kaggle.com/hitty28" target="_blank" class="text-gray-400 hover:text-white transition duration-300">
+                        <i class="fab fa-kaggle text-xl"></i>
+                    </a>
+                    <a href="https://medium.com/@vulapusairohith28" target="_blank" class="text-gray-400 hover:text-white transition duration-300">
+                        <i class="fab fa-medium-m text-xl"></i>
+                    </a>
+                    <a href="https://instagram.com/sai_rohith_2812" target="_blank" class="text-gray-400 hover:text-white transition duration-300">
+                        <i class="fab fa-instagram text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>© 2023 Sai Rohith Vulapu. All rights reserved.</p>
+                <p class="mt-2">"Future unfolds, past escapes, seize today."</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Animate stats counters
+        function animateValue(id, start, end, duration) {
+            let obj = document.getElementById(id);
+            let range = end - start;
+            let minTimer = 50;
+            let stepTime = Math.abs(Math.floor(duration / range));
+            
+            stepTime = Math.max(stepTime, minTimer);
+            
+            let startTime = new Date().getTime();
+            let endTime = startTime + duration;
+            let timer;
+            
+            function run() {
+                let now = new Date().getTime();
+                let remaining = Math.max((endTime - now) / duration, 0);
+                let value = Math.round(end - (remaining * range));
+                obj.innerHTML = value + "+";
+                if (value == end) {
+                    clearInterval(timer);
+                }
+            }
+            
+            timer = setInterval(run, stepTime);
+            run();
+        }
+        
+        // Start animations when stats section comes into view
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateValue("repoCount", 0, 50, 2000);
+                    animateValue("commitCount", 0, 1000, 2000);
+                    animateValue("starCount", 0, 100, 2000);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {threshold: 0.5});
+        
+        observer.observe(document.querySelector("#repoCount").parentElement.parentElement);
+    </script>
+</body>
+</html>
