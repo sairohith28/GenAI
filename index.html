@@ -57,27 +57,41 @@
             color: #64748b;
         }
         
-        textarea {
+        textarea, input {
             border-radius: 8px;
             border: 1px solid #e2e8f0;
             padding: 0.75rem;
             transition: all 0.2s ease;
         }
         
-        textarea:focus {
+        textarea:focus, input:focus {
             outline: none;
             border-color: #93c5fd;
             box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2);
         }
         
-        select {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
+        #user-search {
+            width: 100%;
             padding-right: 2.5rem;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
         }
     </style>
 </head>
@@ -92,12 +106,8 @@
             
             <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <div class="relative w-full">
-                    <select id="user-select" class="w-full pl-4 pr-10 py-2 text-base border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 appearance-none bg-white">
-                        <option value="D1000">User D1000</option>
-                        <option value="D1001">User D1001</option>
-                        <option value="D1002">User D1002</option>
-                        <option value="D1003">User D1003</option>
-                    </select>
+                    <input type="text" id="user-search" class="w-full pl-4 pr-10 py-2" placeholder="Search users..." oninput="searchUsers()">
+                    <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 </div>
                 <button onclick="loadUserData()" class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm">
                     <i class="fas fa-sync-alt"></i>
@@ -204,16 +214,9 @@
                         </div>
                         <div class="text-sm text-gray-600">Take blood pressure medication with breakfast</div>
                     </li>
-                    <li class="status-item p-3 rounded-lg hover:bg-gray-50">
-                        <div class="flex justify-between items-start mb-1">
-                            <div class="font-medium text-gray-800">Doctor Appointment</div>
-                            <div class="text-sm text-gray-500">In 2 hours (12:00 PM)</div>
-                        </div>
-                        <div class="text-sm text-gray-600">Annual checkup with Dr. Smith</div>
-                    </li>
                 </ul>
                 
-                <button onclick="addReminder()" class="w-full py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm">
+                <button onclick="showReminderModal()" class="w-full py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm">
                     <i class="fas fa-plus mr-2"></i> Add New Reminder
                 </button>
             </div>
@@ -240,320 +243,378 @@
         </div>
     </div>
 
+    <!-- Reminder Modal -->
+    <div id="reminder-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-semibold mb-4">Add New Reminder</h2>
+            <form id="reminder-form">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Reminder Type</label>
+                    <input type="text" id="reminder-type" class="w-full" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Scheduled Time</label>
+                    <input type="time" id="reminder-time" class="w-full" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Description</label>
+                    <textarea id="reminder-desc" class="w-full" rows="2"></textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeReminderModal()" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded-lg">Add Reminder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Sample data for charts
-        const healthData = {
-            labels: ['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM'],
-            datasets: [
-                {
-                    label: 'Heart Rate',
-                    data: [72, 75, 82, 85, 80, 78],
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: true
-                },
-                {
-                    label: 'Blood Glucose',
-                    data: [110, 105, 112, 100, 95, 98],
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: true
-                }
-            ]
-        };
+        // Global variables
+        let selectedUserId = "D1000";
+        const baseUrl = "http://localhost:5000"; // Update this to your Flask server IP if different
 
-        const activityData = {
-            labels: ['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM'],
-            datasets: [
-                {
-                    label: 'Movement Activity',
-                    data: [30, 45, 10, 20, 5, 15],
-                    backgroundColor: '#10b981',
-                    borderRadius: 6
-                }
-            ]
-        };
-
-        // Initialize charts
-        const healthCtx = document.getElementById('health-chart').getContext('2d');
+        // Chart initialization
+        const healthCtx = document.getElementById("health-chart").getContext("2d");
         const healthChart = new Chart(healthCtx, {
-            type: 'line',
-            data: healthData,
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: "Heart Rate",
+                        data: [],
+                        borderColor: "#ef4444",
+                        fill: true,
+                        backgroundColor: "rgba(239, 68, 68, 0.05)",
+                        tension: 0.4
+                    },
+                    {
+                        label: "Blood Glucose",
+                        data: [],
+                        borderColor: "#3b82f6",
+                        fill: true,
+                        backgroundColor: "rgba(59, 130, 246, 0.05)",
+                        tension: 0.4
+                    }
+                ]
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20
-                        }
-                    }
-                },
                 scales: {
-                    y: {
-                        beginAtZero: false,
-                        grid: {
-                            drawBorder: false
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
+                    y: { beginAtZero: false },
+                    x: { grid: { display: false } }
                 }
             }
         });
 
-        const activityCtx = document.getElementById('activity-chart').getContext('2d');
+        const activityCtx = document.getElementById("activity-chart").getContext("2d");
         const activityChart = new Chart(activityCtx, {
-            type: 'bar',
-            data: activityData,
+            type: "bar",
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Movement Activity",
+                    data: [],
+                    backgroundColor: "#10b981",
+                    borderRadius: 6
+                }]
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20
-                        }
-                    }
-                },
                 scales: {
-                    y: {
+                    y: { 
                         beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Minutes of Activity'
-                        },
-                        grid: {
-                            drawBorder: false
-                        }
+                        title: { display: true, text: "Minutes" }
                     },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
+                    x: { grid: { display: false } }
                 }
             }
         });
 
-        // Functions to interact with the backend API
-        function loadUserData() {
-            const userId = document.getElementById('user-select').value;
-            const baseUrl = 'http://192.168.1.4:5000';  // Your Flask server
-
-            // Show loading state
-            document.getElementById('health-status-badge').textContent = 'Loading...';
-            document.getElementById('safety-status-badge').textContent = 'Loading...';
-            document.getElementById('reminders-badge').textContent = 'Loading...';
-
-            fetch(`${baseUrl}/api/user/${userId}/health-status`)
-                .then(response => response.json())
-                .then(data => updateHealthData(data))
-                .catch(error => {
-                    console.error('Health fetch error:', error);
-                    document.getElementById('health-status-badge').className = 'badge bg-red-100 text-red-800';
-                    document.getElementById('health-status-badge').textContent = 'Error';
-                });
-
-            fetch(`${baseUrl}/api/user/${userId}/safety-status`)
-                .then(response => response.json())
-                .then(data => updateSafetyData(data))
-                .catch(error => {
-                    console.error('Safety fetch error:', error);
-                    document.getElementById('safety-status-badge').className = 'badge bg-red-100 text-red-800';
-                    document.getElementById('safety-status-badge').textContent = 'Error';
-                });
-
-            fetch(`${baseUrl}/api/user/${userId}/reminders?look_ahead_hours=4`)
-                .then(response => response.json())
-                .then(data => updateRemindersData(data))
-                .catch(error => {
-                    console.error('Reminders fetch error:', error);
-                    document.getElementById('reminders-badge').className = 'badge bg-red-100 text-red-800';
-                    document.getElementById('reminders-badge').textContent = 'Error';
-                });
-        }
-
-        function updateHealthData(data) {
-            console.log('Health data:', data);
-            const badge = document.getElementById('health-status-badge');
-            if (data.alerts && data.alerts.length > 0) {
-                badge.className = 'badge bg-red-100 text-red-800';
-                badge.textContent = 'Alert';
-            } else {
-                badge.className = 'badge bg-green-100 text-green-800';
-                badge.textContent = 'Normal';
+        // User search function
+        function searchUsers() {
+            const query = document.getElementById("user-search").value.trim();
+            if (query) {
+                selectedUserId = query; // Simple implementation: assumes valid ID input
+                loadUserData();
             }
         }
 
+        // Load user data from backend
+        function loadUserData() {
+            fetch(`${baseUrl}/api/user/${selectedUserId}/comprehensive-check`)
+                .then(response => response.json())
+                .then(data => {
+                    updateHealthData(data.health_status);
+                    updateSafetyData(data.safety_status);
+                    updateRemindersData(data.reminders);
+                    updateCharts(data);
+                })
+                .catch(error => {
+                    console.error("Comprehensive fetch error:", error);
+                });
+        }
+
+        // Update health data
+        function updateHealthData(data) {
+            const badge = document.getElementById("health-status-badge");
+            if (data.alerts && data.alerts.length > 0) {
+                badge.className = "badge bg-red-100 text-red-800";
+                badge.textContent = "Alert";
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "Normal";
+            }
+            
+            document.getElementById("heart-rate").textContent = `${data.heart_rate || 0} bpm`;
+            document.getElementById("blood-pressure").textContent = data.blood_pressure || "N/A";
+            document.getElementById("glucose-level").textContent = `${data.glucose || 0} mg/dL`;
+            document.getElementById("oxygen-saturation").textContent = `${data.spo2 || 0}%`;
+        }
+
+        // Update safety data
         function updateSafetyData(data) {
-            console.log('Safety data:', data);
-            const badge = document.getElementById('safety-status-badge');
+            const badge = document.getElementById("safety-status-badge");
             if (data.alert) {
-                badge.className = 'badge bg-red-100 text-red-800';
+                badge.className = "badge bg-red-100 text-red-800";
                 badge.textContent = data.alert;
             } else {
-                badge.className = 'badge bg-green-100 text-green-800';
-                badge.textContent = 'Safe';
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "Safe";
             }
+            
+            document.getElementById("current-location").textContent = data.location || "Unknown";
+            document.getElementById("last-activity").textContent = data.last_activity || data["Movement Activity"] || "Unknown";
+            document.getElementById("last-movement").textContent = moment(data.timestamp).fromNow();
         }
 
+        // Update reminders data
         function updateRemindersData(data) {
-            console.log('Reminders data:', data);
-            const badge = document.getElementById('reminders-badge');
-            const remindersList = document.getElementById('reminders-list');
+            const badge = document.getElementById("reminders-badge");
+            const remindersList = document.getElementById("reminders-list");
 
             if (data.upcoming_reminders && data.upcoming_reminders.length > 0) {
-                badge.className = 'badge bg-yellow-100 text-yellow-800';
+                badge.className = "badge bg-yellow-100 text-yellow-800";
                 badge.textContent = `${data.upcoming_reminders.length} Upcoming`;
-                remindersList.innerHTML = '';
+                remindersList.innerHTML = "";
                 data.upcoming_reminders.forEach(reminder => {
-                    const li = document.createElement('li');
-                    li.className = 'status-item p-3 rounded-lg hover:bg-gray-50';
+                    const li = document.createElement("li");
+                    li.className = "status-item p-3 rounded-lg hover:bg-gray-50";
                     li.innerHTML = `
                         <div class="flex justify-between items-start mb-1">
                             <div class="font-medium text-gray-800">${reminder.type}</div>
                             <div class="text-sm text-gray-500">In ${reminder.time_until} (${reminder.scheduled_time})</div>
                         </div>
                         <div class="text-sm text-gray-600">
-                            ${reminder.already_sent ? 'Reminder sent' : 'Not yet sent'} - 
-                            ${reminder.acknowledged ? 'Acknowledged' : 'Not acknowledged'}
+                            ${reminder.already_sent ? "Sent" : "Pending"} - 
+                            ${reminder.acknowledged ? "Acknowledged" : "Not acknowledged"}
                         </div>
                     `;
                     remindersList.appendChild(li);
                 });
             } else {
-                badge.className = 'badge bg-green-100 text-green-800';
-                badge.textContent = 'None';
-                remindersList.innerHTML = '<li class="status-item p-3 rounded-lg hover:bg-gray-50 text-gray-600">No upcoming reminders for the next few hours.</li>';
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "None";
+                remindersList.innerHTML = '<li class="status-item p-3 rounded-lg hover:bg-gray-50 text-gray-600">No upcoming reminders.</li>';
             }
         }
 
-        function runAnalysis() {
-            const userId = document.getElementById('user-select').value;
-            const query = document.getElementById('analysis-query').value;
-            const baseUrl = 'http://192.168.1.4:5000';
+        // Update charts with health and activity data
+        function updateCharts(data) {
+            const timestamp = data.timestamp || (data.health_status && data.health_status.timestamp) || moment().format("HH:mm");
+            const formattedTime = moment(timestamp).format("HH:mm");
+            
+            // Update health chart
+            healthChart.data.labels = [formattedTime];
+            
+            // Get heart rate from health_status
+            const heartRate = data.health_status && data.health_status.heart_rate;
+            healthChart.data.datasets[0].data = [heartRate || 0];
+            
+            // Get glucose level from health_status
+            const glucose = data.health_status && data.health_status.glucose;
+            healthChart.data.datasets[1].data = [glucose || 0];
+            
+            healthChart.update();
 
-            if (!query.trim()) {
-                alert('Please enter a query for analysis.');
+            // Update activity chart
+            activityChart.data.labels = [formattedTime];
+            
+            // Calculate activity data - if inactivity_duration exists, parse it
+            let activityValue = 0;
+            if (data.safety_status) {
+                if (data.safety_status.inactivity_duration) {
+                    if (typeof data.safety_status.inactivity_duration === 'string' && 
+                        data.safety_status.inactivity_duration.includes('minutes')) {
+                        activityValue = parseFloat(data.safety_status.inactivity_duration.split(' ')[0]);
+                    } else {
+                        activityValue = parseFloat(data.safety_status.inactivity_duration) || 0;
+                    }
+                }
+                
+                // If no inactivity duration but we have movement activity, use a default value
+                if (activityValue === 0 && data.safety_status.last_activity === "Active Movement") {
+                    activityValue = 10; // Default activity value if active
+                }
+            }
+            
+            activityChart.data.datasets[0].data = [activityValue];
+            activityChart.update();
+            
+            console.log("Updated charts with health data:", heartRate, glucose, "and activity:", activityValue);
+        }
+
+        // Notify healthcare provider
+        function notifyHealthcare() {
+            const button = event.currentTarget;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Sending...';
+            button.disabled = true;
+
+            fetch(`${baseUrl}/api/notify-caregiver`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: selectedUserId,
+                    alert_type: "Healthcare Needed",
+                    details: { reason: "Manual request from dashboard" }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+                showNotification("Healthcare provider notified successfully.", "success");
+            })
+            .catch(error => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+                showNotification("Error notifying healthcare provider: " + error, "error");
+            });
+        }
+
+        // Check on user
+        function checkOnUser() {
+            const button = event.currentTarget;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Sending...';
+            button.disabled = true;
+
+            fetch(`${baseUrl}/api/notify-caregiver`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: selectedUserId,
+                    alert_type: "Check Requested",
+                    details: { reason: "Manual request from dashboard" }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+                showNotification("Caregiver notified to check on user.", "success");
+            })
+            .catch(error => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+                showNotification("Error notifying caregiver: " + error, "error");
+            });
+        }
+
+        // Run AI analysis
+        function runAnalysis() {
+            const query = document.getElementById("analysis-query").value.trim();
+            if (!query) {
+                showNotification("Please enter a query for analysis.", "error");
                 return;
             }
 
-            document.getElementById('analysis-content').innerHTML = `
+            document.getElementById("analysis-content").innerHTML = `
                 <div class="flex items-center justify-center gap-2 text-gray-600">
                     <i class="fas fa-circle-notch fa-spin"></i>
-                    <span>Analyzing... Please wait.</span>
+                    <span>Analyzing...</span>
                 </div>
             `;
 
-            fetch(`${baseUrl}/api/user/${userId}/analysis`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            fetch(`${baseUrl}/api/user/${selectedUserId}/analysis`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ query: query })
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('analysis-content').innerHTML = `
+                document.getElementById("analysis-content").innerHTML = `
                     <p class="font-medium text-gray-800 mb-2">Analysis Result:</p>
-                    <p class="text-gray-600">${data.analysis || 'No analysis returned'}</p>
+                    <p class="text-gray-600">${data.analysis || "No analysis returned"}</p>
                 `;
             })
             .catch(error => {
-                document.getElementById('analysis-content').innerHTML = `
+                document.getElementById("analysis-content").innerHTML = `
                     <p class="text-red-600">Error running analysis: ${error}</p>
                 `;
             });
         }
 
-        function notifyHealthcare() {
-            const userId = document.getElementById('user-select').value;
-            const baseUrl = 'http://192.168.1.4:5000';
-
-            // Show loading state
-            const button = event.currentTarget;
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Sending...';
-            button.disabled = true;
-
-            fetch(`${baseUrl}/api/notify-caregiver`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    user_id: userId,
-                    alert_type: 'Healthcare Needed',
-                    details: { reason: 'Manual request from dashboard' }
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                button.innerHTML = originalText;
-                button.disabled = false;
-                showNotification('Healthcare provider notified successfully.', 'success');
-            })
-            .catch(error => {
-                button.innerHTML = originalText;
-                button.disabled = false;
-                showNotification('Error notifying healthcare provider: ' + error, 'error');
-            });
+        // Show reminder modal
+        function showReminderModal() {
+            document.getElementById("reminder-modal").style.display = "block";
+            const form = document.getElementById("reminder-form");
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                addReminder();
+            };
         }
 
-        function checkOnUser() {
-            const userId = document.getElementById('user-select').value;
-            const baseUrl = 'http://192.168.1.4:5000';
-
-            // Show loading state
-            const button = event.currentTarget;
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Sending...';
-            button.disabled = true;
-
-            fetch(`${baseUrl}/api/notify-caregiver`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    user_id: userId,
-                    alert_type: 'Check Requested',
-                    details: { reason: 'Manual request from dashboard' }
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                button.innerHTML = originalText;
-                button.disabled = false;
-                showNotification('Caregiver notified to check on user.', 'success');
-            })
-            .catch(error => {
-                button.innerHTML = originalText;
-                button.disabled = false;
-                showNotification('Error notifying caregiver: ' + error, 'error');
-            });
+        // Close reminder modal
+        function closeReminderModal() {
+            document.getElementById("reminder-modal").style.display = "none";
         }
 
+        // Add new reminder
         function addReminder() {
-            showNotification('This feature would open a form to add a new reminder for the user.', 'info');
+            const type = document.getElementById("reminder-type").value.trim();
+            const time = document.getElementById("reminder-time").value;
+            const desc = document.getElementById("reminder-desc").value.trim();
+
+            if (!type || !time) {
+                showNotification("Please fill in required fields.", "error");
+                return;
+            }
+
+            fetch(`${baseUrl}/api/user/${selectedUserId}/reminders`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    reminder_type: type,
+                    scheduled_time: time,
+                    description: desc
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                closeReminderModal();
+                showNotification("Reminder added successfully.", "success");
+                loadUserData(); // Refresh data
+            })
+            .catch(error => {
+                showNotification("Error adding reminder: " + error, "error");
+            });
         }
 
+        // Show notification
         function showNotification(message, type) {
-            const notification = document.createElement('div');
+            const notification = document.createElement("div");
             notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 ${
-                type === 'success' ? 'bg-green-100 text-green-800' : 
-                type === 'error' ? 'bg-red-100 text-red-800' : 
-                'bg-blue-100 text-blue-800'
+                type === "success" ? "bg-green-100 text-green-800" :
+                type === "error" ? "bg-red-100 text-red-800" :
+                "bg-blue-100 text-blue-800"
             }`;
             
-            const icon = type === 'success' ? 'fa-check-circle' : 
-                        type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+            const icon = type === "success" ? "fa-check-circle" :
+                        type === "error" ? "fa-exclamation-circle" : "fa-info-circle";
             
             notification.innerHTML = `
                 <i class="fas ${icon} text-xl"></i>
@@ -561,15 +622,15 @@
             `;
             
             document.body.appendChild(notification);
-            
             setTimeout(() => {
-                notification.style.opacity = '0';
-                notification.style.transition = 'opacity 0.5s ease';
+                notification.style.opacity = "0";
+                notification.style.transition = "opacity 0.5s ease";
                 setTimeout(() => notification.remove(), 500);
             }, 3000);
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initial load
+        document.addEventListener("DOMContentLoaded", function() {
             loadUserData();
         });
     </script>
