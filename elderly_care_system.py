@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import requests
 import json
+import numpy as np
 import time
 from datetime import datetime, timedelta
 import logging
@@ -11,6 +12,19 @@ from autogen import Agent, AssistantAgent, UserProxyAgent, GroupChat, GroupChatM
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Custom JSON encoder to handle numpy and pandas numeric types
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (np.integer, np.int64)):
+            return int(obj)
+        if isinstance(obj, (np.floating, np.float64)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, pd.Timestamp):
+            return obj.strftime("%Y-%m-%d %H:%M:%S")
+        return super().default(obj)
 
 # LLM API Configuration
 LLM_API_URL = "http://203.112.158.104:5006/v1/chat/completions"  # Corrected endpoint
@@ -298,7 +312,7 @@ class CaregiverAgent(UserProxyAgent):
         
     def notify_caregiver(self, alert_type, user_id, details):
         """Simulate notifying the caregiver"""
-        message = f"ALERT: {alert_type} for user {user_id}\nDetails: {json.dumps(details, indent=2)}"
+        message = f"ALERT: {alert_type} for user {user_id}\nDetails: {json.dumps(details, indent=2, cls=NumpyEncoder)}"
         logger.info(f"Caregiver notification sent: {message}")
         return {"status": "Notification sent", "message": message}
 
@@ -329,64 +343,39 @@ class ElderCareSystem:
     
     def run_comprehensive_check(self, user_id):
         """Run a comprehensive check on a user across all systems"""
-        results = {
-            "user_id": user_id,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "health_status": self.health_agent.monitor_health(user_id),
-            "safety_status": self.safety_agent.monitor_safety(user_id),
-            "reminders": self.reminder_agent.get_upcoming_reminders(user_id)
-        }
-        
-        alerts = []
-        if isinstance(results["health_status"], dict) and "alerts" in results["health_status"]:
-            alerts.append({"type": "Health Alert", "details": results["health_status"]})
-        
-        if isinstance(results["safety_status"], dict) and "alert" in results["safety_status"]:
-            alerts.append({"type": "Safety Alert", "details": results["safety_status"]})
-        
-        notifications = []
-        for alert in alerts:
-            notification = self.caregiver_agent.notify_caregiver(alert["type"], user_id, alert["details"])
-            notifications.append(notification)
-        
-        if notifications:
-            results["notifications"] = notifications
-        
-        return results
+        try:
+            results = {
+                "user_id": user_id,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "health_status": self.health_agent.monitor_health(user_id),
+                "safety_status": self.safety_agent.monitor_safety(user_id),
+                "reminders": self.reminder_agent.get_upcoming_reminders(user_id)
+            }
+            
+            alerts = []
+            if isinstance(results["health_status"], dict) and "alerts" in results["health_status"]:
+                alerts.append({"type": "Health Alert", "details": results["health_status"]})
+            
+            if isinstance(results["safety_status"], dict) and "alert" in results["safety_status"]:
+                alerts.append({"type": "Safety Alert", "details": results["safety_status"]})
+            
+            notifications = []
+            for alert in alerts:
+                notification = self.caregiver_agent.notify_caregiver(alert["type"], user_id, alert["details"])
+                notifications.append(notification)
+            
+            if notifications:
+                results["notifications"] = notifications
+            
+            # Convert any NumPy types to Python standard types before returning
+            return json.loads(json.dumps(results, cls=NumpyEncoder))
+        except Exception as e:
+            logger.error(f"Error in comprehensive check: {e}")
+            raise
     
-    # def run_group_analysis(self, user_id, query):
-    #     """Run a collaborative analysis using the group chat"""
-    #     initial_prompt = f"""
-    #     Analyze the situation for elderly user {user_id} with this query: {query}
-        
-    #     Health Monitor, provide the current health status.
-    #     Safety Monitor, check for any safety concerns.
-    #     Reminder System, list any upcoming reminders.
-        
-    #     Coordinator, provide a comprehensive analysis and recommendation.
-    #     """
-        
-    #     self.groupchat.messages = []
-    #     self.coordinator.initiate_chat(self.caregiver_agent, message=initial_prompt)
-        
-    #     final_messages = [msg for msg in self.groupchat.messages if msg["role"] == "assistant" and msg["name"] == "Coordinator"]
-        
-    #     if final_messages:
-    #         return {
-    #             "user_id": user_id,
-    #             "query": query,
-    #             "analysis": final_messages[-1]["content"],
-    #             "full_conversation": self.groupchat.messages
-    #         }
-    #     else:
-    #         return {
-    #             "user_id": user_id,
-    #             "query": query,
-    #             "error": "No analysis was generated by the coordinator"
-    #         }
     def run_group_analysis(self, user_id, query):
         """Run a collaborative analysis using the group chat"""
-    # Gather data from each agent
+        # Gather data from each agent
         health_status = self.health_agent.monitor_health(user_id)
         safety_status = self.safety_agent.monitor_safety(user_id)
         reminders = self.reminder_agent.get_upcoming_reminders(user_id)
@@ -395,9 +384,9 @@ class ElderCareSystem:
         initial_prompt = f"""
         Analyze the situation for elderly user {user_id} with this query: {query}
         
-        Health Status: {json.dumps(health_status, indent=2)}
-        Safety Status: {json.dumps(safety_status, indent=2)}
-        Upcoming Reminders: {json.dumps(reminders, indent=2)}
+        Health Status: {json.dumps(health_status, indent=2, cls=NumpyEncoder)}
+        Safety Status: {json.dumps(safety_status, indent=2, cls=NumpyEncoder)}
+        Upcoming Reminders: {json.dumps(reminders, indent=2, cls=NumpyEncoder)}
         
         Provide a comprehensive analysis and recommendation based on the above data.
         """
@@ -427,4 +416,4 @@ if __name__ == "__main__":
     system = ElderCareSystem()
     user_id = "D1001"
     results = system.run_comprehensive_check(user_id)
-    print(json.dumps(results, indent=2))
+    print(json.dumps(results, indent=2, cls=NumpyEncoder))
