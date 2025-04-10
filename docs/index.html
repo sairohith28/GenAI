@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elderly Care Multi-Agent Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .chart-container {
+            height: 220px;
+            flex-grow: 1;
+        }
+        
+        .status-item {
+            transition: all 0.2s ease;
+        }
+        
+        .status-item:hover {
+            background-color: rgba(241, 245, 249, 0.5);
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+        }
+        
+        .metric-value {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: #1e293b;
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        
+        textarea, input {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2);
+        }
+        
+        #user-search {
+            width: 100%;
+            padding-right: 2.5rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Elderly Care Dashboard</h1>
+                <p class="text-gray-600">Multi-agent monitoring system for elderly care</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <div class="relative w-full">
+                    <input type="text" id="user-search" class="w-full pl-4 pr-10 py-2" placeholder="Search users..." oninput="searchUsers()">
+                    <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <button onclick="loadUserData()" class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Multi-Agent Coordination Card (New) -->
+            <div class="card bg-white p-6 lg:col-span-2">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 rounded-lg bg-indigo-100 text-indigo-600">
+                            <i class="fas fa-robot text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-semibold text-gray-800">Multi-Agent Coordination</h2>
+                    </div>
+                    <span id="priority-badge" class="badge bg-gray-100 text-gray-800">Analyzing</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">Priority Assessment</p>
+                        <p id="priority-level" class="metric-value">Analyzing...</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">Active Agents</p>
+                        <p id="active-agents" class="metric-value">5 Agents</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">System Response Time</p>
+                        <p id="system-response" class="metric-value">0.5s</p>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h3 class="font-medium text-gray-800 mb-2">Recommended Actions:</h3>
+                    <ul id="recommended-actions" class="list-disc pl-5 space-y-1 text-gray-700">
+                        <li>Analyzing user data...</li>
+                    </ul>
+                </div>
+                
+                <div class="p-3 rounded-lg bg-indigo-50 border border-indigo-100">
+                    <div class="flex items-center gap-2 text-indigo-800 mb-2">
+                        <i class="fas fa-lightbulb"></i>
+                        <span class="font-medium">Agent Communication Log</span>
+                    </div>
+                    <div id="agent-communication" class="text-sm text-gray-700 max-h-48 overflow-auto">
+                        <p>Initializing multi-agent communication...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Health Monitoring Card -->
+            <div class="card bg-white p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 rounded-lg bg-blue-100 text-blue-600">
+                            <i class="fas fa-heartbeat text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-semibold text-gray-800">Health Monitoring</h2>
+                    </div>
+                    <span id="health-status-badge" class="badge bg-green-100 text-green-800">Normal</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">Heart Rate</p>
+                        <p id="heart-rate" class="metric-value">85 bpm</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">Blood Pressure</p>
+                        <p id="blood-pressure" class="metric-value">120/80 mmHg</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">Glucose Level</p>
+                        <p id="glucose-level" class="metric-value">100 mg/dL</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="metric-label">Oxygen Saturation</p>
+                        <p id="oxygen-saturation" class="metric-value">98%</p>
+                    </div>
+                </div>
+                
+                <div class="chart-container mb-4">
+                    <canvas id="health-chart"></canvas>
+                </div>
+                
+                <button onclick="notifyHealthcare()" class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm">
+                    <i class="fas fa-bell mr-2"></i> Contact Healthcare Provider
+                </button>
+            </div>
+            
+            <!-- Safety Monitoring Card -->
+            <div class="card bg-white p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 rounded-lg bg-green-100 text-green-600">
+                            <i class="fas fa-shield-alt text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-semibold text-gray-800">Safety Monitoring</h2>
+                    </div>
+                    <span id="safety-status-badge" class="badge bg-green-100 text-green-800">Safe</span>
+                </div>
+                
+                <div class="space-y-3 mb-6">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-map-marker-alt text-gray-400"></i>
+                        <p>Last detected location: <strong id="current-location" class="text-gray-800">Living Room</strong></p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-walking text-gray-400"></i>
+                        <p>Last activity: <strong id="last-activity" class="text-gray-800">Walking</strong></p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-clock text-gray-400"></i>
+                        <p>Last movement detected: <strong id="last-movement" class="text-gray-800">2 minutes ago</strong></p>
+                    </div>
+                </div>
+                
+                <div class="chart-container mb-4">
+                    <canvas id="activity-chart"></canvas>
+                </div>
+                
+                <button onclick="checkOnUser()" class="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm">
+                    <i class="fas fa-user-check mr-2"></i> Check on User
+                </button>
+            </div>
+            
+            <!-- Reminders Card -->
+            <div class="card bg-white p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 rounded-lg bg-yellow-100 text-yellow-600">
+                            <i class="fas fa-bell text-xl"></i>
+                        </div>
+                        <h2 class="text-xl font-semibold text-gray-800">Reminders</h2>
+                    </div>
+                    <span id="reminders-badge" class="badge bg-yellow-100 text-yellow-800">2 Upcoming</span>
+                </div>
+                
+                <ul class="space-y-3 mb-6" id="reminders-list">
+                    <li class="status-item p-3 rounded-lg hover:bg-gray-50">
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="font-medium text-gray-800">Medication Reminder</div>
+                            <div class="text-sm text-gray-500">In 30 minutes (10:30 AM)</div>
+                        </div>
+                        <div class="text-sm text-gray-600">Take blood pressure medication with breakfast</div>
+                    </li>
+                </ul>
+                
+                <button onclick="showReminderModal()" class="w-full py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm">
+                    <i class="fas fa-plus mr-2"></i> Add New Reminder
+                </button>
+            </div>
+            
+            <!-- AI Analysis Card -->
+            <div class="card bg-white p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-3 rounded-lg bg-purple-100 text-purple-600">
+                        <i class="fas fa-brain text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-800">AI Analysis</h2>
+                </div>
+                
+                <div id="analysis-content" class="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <p class="text-gray-600">Ask the AI system to analyze the user's current situation or provide specific recommendations.</p>
+                </div>
+                
+                <textarea id="analysis-query" placeholder="Enter your query here..." rows="3" class="w-full mb-4"></textarea>
+                
+                <button onclick="runAnalysis()" class="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm">
+                    <i class="fas fa-play mr-2"></i> Run Analysis
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reminder Modal -->
+    <div id="reminder-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-semibold mb-4">Add New Reminder</h2>
+            <form id="reminder-form">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Reminder Type</label>
+                    <input type="text" id="reminder-type" class="w-full" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Scheduled Time</label>
+                    <input type="time" id="reminder-time" class="w-full" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Description</label>
+                    <textarea id="reminder-desc" class="w-full" rows="2"></textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeReminderModal()" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded-lg">Add Reminder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let selectedUserId = "D1000";
+        const baseUrl = "http://localhost:5000"; // Update this to your Flask server IP if different
+
+        // Chart initialization
+        const healthCtx = document.getElementById("health-chart").getContext("2d");
+        const healthChart = new Chart(healthCtx, {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: "Heart Rate",
+                        data: [],
+                        borderColor: "#ef4444",
+                        fill: true,
+                        backgroundColor: "rgba(239, 68, 68, 0.05)",
+                        tension: 0.4
+                    },
+                    {
+                        label: "Blood Glucose",
+                        data: [],
+                        borderColor: "#3b82f6",
+                        fill: true,
+                        backgroundColor: "rgba(59, 130, 246, 0.05)",
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: false },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        const activityCtx = document.getElementById("activity-chart").getContext("2d");
+        const activityChart = new Chart(activityCtx, {
+            type: "bar",
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Movement Activity",
+                    data: [],
+                    backgroundColor: "#10b981",
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: "Minutes" }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // User search function
+        function searchUsers() {
+            const query = document.getElementById("user-search").value.trim();
+            if (query) {
+                selectedUserId = query; // Simple implementation: assumes valid ID input
+                loadUserData();
+            }
+        }
+
+        // Load user data from backend
+        function loadUserData() {
+            fetch(`${baseUrl}/api/user/${selectedUserId}/comprehensive-check`)
+                .then(response => response.json())
+                .then(data => {
+                    // Update all UI components with the new data
+                    updateHealthData(data.health_status);
+                    updateSafetyData(data.safety_status);
+                    updateRemindersData(data.reminders);
+                    updateCharts(data);
+                    
+                    // New: Update multi-agent coordination data
+                    if (data.coordinator_assessment) {
+                        updateCoordinationData(data.coordinator_assessment);
+                    }
+                    
+                    // Log agent communication if available
+                    logAgentCommunication("Health Agent", "Monitoring vital signs");
+                    logAgentCommunication("Safety Agent", "Analyzing movement patterns");
+                    logAgentCommunication("Reminder Agent", "Checking upcoming tasks");
+                    logAgentCommunication("Coordinator", "Integrating multi-agent data");
+                    
+                    // Update system metrics
+                    if (data.system_metrics) {
+                        updateSystemMetrics(data.system_metrics);
+                    }
+                })
+                .catch(error => {
+                    console.error("Comprehensive fetch error:", error);
+                    showNotification("Error loading user data", "error");
+                });
+        }
+
+        // Update health data
+        function updateHealthData(data) {
+            const badge = document.getElementById("health-status-badge");
+            if (data.alerts && data.alerts.length > 0) {
+                badge.className = "badge bg-red-100 text-red-800";
+                badge.textContent = "Alert";
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "Normal";
+            }
+            
+            document.getElementById("heart-rate").textContent = `${data.heart_rate || 0} bpm`;
+            document.getElementById("blood-pressure").textContent = data.blood_pressure || "N/A";
+            document.getElementById("glucose-level").textContent = `${data.glucose || 0} mg/dL`;
+            document.getElementById("oxygen-saturation").textContent = `${data.spo2 || 0}%`;
+            
+            // Log health trends if available
+            if (data.trend_analysis && typeof data.trend_analysis !== 'string') {
+                let trendMessage = "Analyzing health data trends: ";
+                
+                if (data.trend_analysis.heart_rate) {
+                    trendMessage += `Heart rate ${data.trend_analysis.heart_rate}`;
+                }
+                
+                if (data.trend_analysis.blood_pressure) {
+                    trendMessage += `, Blood pressure ${data.trend_analysis.blood_pressure}`;
+                }
+                
+                if (data.trend_analysis.glucose) {
+                    trendMessage += `, Glucose ${data.trend_analysis.glucose}`;
+                }
+                
+                logAgentCommunication("Health Agent", trendMessage);
+            }
+            
+            // Show alert details if present
+            if (data.alerts && data.alerts.length > 0) {
+                data.alerts.forEach(alert => {
+                    logAgentCommunication("Health Agent", `Alert: ${alert}`);
+                });
+                
+                if (data.recommendation) {
+                    logAgentCommunication("Health Agent", `Recommendation: ${
+                        data.recommendation.length > 100 
+                            ? data.recommendation.substring(0, 100) + "..." 
+                            : data.recommendation
+                    }`);
+                }
+            }
+        }
+
+        // Update safety data
+        function updateSafetyData(data) {
+            const badge = document.getElementById("safety-status-badge");
+            if (data.alert) {
+                badge.className = "badge bg-red-100 text-red-800";
+                badge.textContent = data.alert;
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "Safe";
+            }
+            
+            document.getElementById("current-location").textContent = data.location || "Unknown";
+            document.getElementById("last-activity").textContent = data.last_activity || data["Movement Activity"] || "Unknown";
+            document.getElementById("last-movement").textContent = moment(data.timestamp).fromNow();
+            
+            // Log movement patterns if available
+            if (data.movement_analysis && typeof data.movement_analysis !== 'string') {
+                logAgentCommunication("Safety Agent", data.movement_analysis.insight || "Analyzing movement patterns");
+            }
+            
+            // Log location patterns if available
+            if (data.location_analysis && typeof data.location_analysis !== 'string') {
+                logAgentCommunication("Safety Agent", data.location_analysis.insight || "Analyzing location patterns");
+            }
+            
+            // Show alert details if present
+            if (data.alert) {
+                logAgentCommunication("Safety Agent", `Alert: ${data.alert}`);
+                
+                if (data.recommendation) {
+                    logAgentCommunication("Safety Agent", `Recommendation: ${
+                        data.recommendation.length > 100 
+                            ? data.recommendation.substring(0, 100) + "..." 
+                            : data.recommendation
+                    }`);
+                }
+            }
+        }
+
+        // Update reminders data
+        function updateRemindersData(data) {
+            const badge = document.getElementById("reminders-badge");
+            const remindersList = document.getElementById("reminders-list");
+
+            // Debug logging to see what's coming from the backend
+            console.log("Reminders data received:", data);
+
+            // Check if reminders exist in the nested structure
+            const upcomingReminders = data.upcoming_reminders || 
+                                    (data.reminders && data.reminders.upcoming_reminders) || 
+                                    [];
+            
+            if (Array.isArray(upcomingReminders) && upcomingReminders.length > 0) {
+                badge.className = "badge bg-yellow-100 text-yellow-800";
+                badge.textContent = `${upcomingReminders.length} Upcoming`;
+                remindersList.innerHTML = "";
+                
+                upcomingReminders.forEach(reminder => {
+                    const li = document.createElement("li");
+                    li.className = "status-item p-3 rounded-lg hover:bg-gray-50";
+                    li.innerHTML = `
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="font-medium text-gray-800">${reminder.type}</div>
+                            <div class="text-sm text-gray-500">In ${reminder.time_until} (${reminder.scheduled_time})</div>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            ${reminder.already_sent ? "Sent" : "Pending"} - 
+                            ${reminder.acknowledged ? "Acknowledged" : "Not acknowledged"}
+                        </div>
+                    `;
+                    remindersList.appendChild(li);
+                });
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "None";
+                remindersList.innerHTML = '<li class="status-item p-3 rounded-lg hover:bg-gray-50 text-gray-600">No upcoming reminders.</li>';
+            }
+        }
+
+        // Update charts with health and activity data
+        function updateCharts(data) {
+            // Get current time for new data point
+            const timestamp = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
+            
+            // Update health chart - maintain historical data points
+            if (healthChart.data.labels.length >= 10) {
+                // Keep last 10 data points for better visualization
+                healthChart.data.labels.shift();
+                healthChart.data.datasets[0].data.shift();
+                healthChart.data.datasets[1].data.shift();
+            }
+            
+            // Add new data point
+            healthChart.data.labels.push(timestamp);
+            
+            // Get heart rate from health_status
+            const heartRate = data.health_status && data.health_status.heart_rate;
+            healthChart.data.datasets[0].data.push(heartRate || 0);
+            
+            // Get glucose level from health_status
+            const glucose = data.health_status && data.health_status.glucose;
+            healthChart.data.datasets[1].data.push(glucose || 0);
+            
+            healthChart.update();
+
+            // Update activity chart - create a simple distribution instead of one bar
+            activityChart.data.labels = ["Morning", "Afternoon", "Evening", "Night"];
+            
+            // Generate representative activity data
+            let activityValue = 0;
+            if (data.safety_status) {
+                if (data.safety_status.inactivity_duration) {
+                    if (typeof data.safety_status.inactivity_duration === 'string' && 
+                        data.safety_status.inactivity_duration.includes('minutes')) {
+                        activityValue = parseFloat(data.safety_status.inactivity_duration.split(' ')[0]);
+                    } else {
+                        activityValue = parseFloat(data.safety_status.inactivity_duration) || 0;
+                    }
+                }
+                
+                // If no inactivity duration but we have movement activity, use a default value
+                if ((activityValue === 0 || isNaN(activityValue)) && 
+                    data.safety_status.last_activity === "Active Movement") {
+                    activityValue = 10; // Default activity value if active
+                }
+            }
+            
+            // Create a distribution of activity values across timeframes
+            activityChart.data.datasets[0].data = [
+                activityValue * 0.8, // Morning
+                activityValue * 1.2, // Afternoon
+                activityValue,       // Evening
+                activityValue * 0.5  // Night
+            ];
+            activityChart.update();
+            
+            console.log("Updated charts with health data:", heartRate, glucose, "and activity:", activityValue);
+        }
+
+        // Notify healthcare provider
+        function notifyHealthcare() {
+            const button = event.currentTarget;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Sending...';
+            button.disabled = true;
+
+            fetch(`${baseUrl}/api/notify-caregiver`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: selectedUserId,
+                    alert_type: "Healthcare Needed",
+                    details: { reason: "Manual request from dashboard" }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+                showNotification("Healthcare provider notified successfully.", "success");
+            })
+            .catch(error => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+                showNotification("Error notifying healthcare provider: " + error, "error");
+            });
+        }
+
+        // Check on user
+        function checkOnUser() {
+            const button = event.currentTarget;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Sending...';
+            button.disabled = true;
+
+            fetch(`${baseUrl}/api/notify-caregiver`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: selectedUserId,
+                    alert_type: "Check Requested",
+                    details: { reason: "Manual request from dashboard" }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+                showNotification("Caregiver notified to check on user.", "success");
+            })
+            .catch(error => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+                showNotification("Error notifying caregiver: " + error, "error");
+            });
+        }
+
+        // Run AI analysis
+        function runAnalysis() {
+            const query = document.getElementById("analysis-query").value.trim();
+            if (!query) {
+                showNotification("Please enter a query for analysis.", "error");
+                return;
+            }
+
+            document.getElementById("analysis-content").innerHTML = `
+                <div class="flex items-center justify-center gap-2 text-gray-600">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                    <span>Analyzing...</span>
+                </div>
+            `;
+
+            fetch(`${baseUrl}/api/user/${selectedUserId}/analysis`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Convert markdown to HTML for better rendering
+                let processedText = data.analysis || "No analysis returned";
+                
+                // Process headers
+                processedText = processedText.replace(/### (.*?)\n/g, '<h3 class="text-lg font-semibold mt-3 mb-2">$1</h3>');
+                processedText = processedText.replace(/## (.*?)\n/g, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>');
+                processedText = processedText.replace(/# (.*?)\n/g, '<h1 class="text-2xl font-bold mt-4 mb-3">$1</h1>');
+                
+                // Process bold and italic
+                processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                processedText = processedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                
+                // Process lists
+                processedText = processedText.replace(/- (.*?)(\n|$)/g, '<li class="ml-4">$1</li>');
+                processedText = processedText.replace(/\d+\. (.*?)(\n|$)/g, '<li class="ml-4 list-decimal">$1</li>');
+                
+                // Wrap lists in ul/ol tags
+                const hasListItems = processedText.includes('<li');
+                if (hasListItems) {
+                    processedText = '<ul class="list-disc mb-3 pl-2">' + processedText + '</ul>';
+                }
+                
+                // Process paragraphs
+                processedText = processedText.replace(/\n\n/g, '</p><p class="mb-2">');
+                
+                // Final wrapping
+                processedText = '<div class="analysis-result">' + processedText + '</div>';
+                
+                document.getElementById("analysis-content").innerHTML = `
+                    <p class="font-medium text-gray-800 mb-3">Analysis Result:</p>
+                    <div class="text-gray-700 analysis-content overflow-auto max-h-64 p-3 rounded bg-gray-50">${processedText}</div>
+                `;
+            })
+            .catch(error => {
+                document.getElementById("analysis-content").innerHTML = `
+                    <p class="text-red-600">Error running analysis: ${error}</p>
+                `;
+            });
+        }
+
+        // Show reminder modal
+        function showReminderModal() {
+            document.getElementById("reminder-modal").style.display = "block";
+            const form = document.getElementById("reminder-form");
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                addReminder();
+            };
+        }
+
+        // Close reminder modal
+        function closeReminderModal() {
+            document.getElementById("reminder-modal").style.display = "none";
+        }
+
+        // Add new reminder
+        function addReminder() {
+            const type = document.getElementById("reminder-type").value.trim();
+            const time = document.getElementById("reminder-time").value;
+            const desc = document.getElementById("reminder-desc").value.trim();
+
+            if (!type || !time) {
+                showNotification("Please fill in required fields.", "error");
+                return;
+            }
+
+            fetch(`${baseUrl}/api/user/${selectedUserId}/reminders`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    reminder_type: type,
+                    scheduled_time: time,
+                    description: desc
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                closeReminderModal();
+                showNotification("Reminder added successfully.", "success");
+                
+                // Fetch only the reminders without requiring full user data refresh
+                fetch(`${baseUrl}/api/user/${selectedUserId}/reminders`)
+                    .then(response => response.json())
+                    .then(reminderData => {
+                        updateRemindersData(reminderData);
+                        document.getElementById("reminder-form").reset();
+                    })
+                    .catch(error => {
+                        console.error("Error fetching updated reminders:", error);
+                    });
+            })
+            .catch(error => {
+                showNotification("Error adding reminder: " + error, "error");
+            });
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement("div");
+            notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 ${
+                type === "success" ? "bg-green-100 text-green-800" :
+                type === "error" ? "bg-red-100 text-red-800" :
+                "bg-blue-100 text-blue-800"
+            }`;
+            
+            const icon = type === "success" ? "fa-check-circle" :
+                        type === "error" ? "fa-exclamation-circle" : "fa-info-circle";
+            
+            notification.innerHTML = `
+                <i class="fas ${icon} text-xl"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.style.opacity = "0";
+                notification.style.transition = "opacity 0.5s ease";
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+
+        // Initial load
+        document.addEventListener("DOMContentLoaded", function() {
+            loadUserData();
+        });
+
+        // Update coordination data from coordinator agent
+        function updateCoordinationData(coordinationData) {
+            // Set priority badge based on priority level
+            const priorityBadge = document.getElementById("priority-badge");
+            const priorityLevel = coordinationData.priority_level || "low";
+            
+            // Update badge color based on priority level
+            switch(priorityLevel) {
+                case "critical":
+                    priorityBadge.className = "badge bg-red-100 text-red-800";
+                    break;
+                case "high":
+                    priorityBadge.className = "badge bg-orange-100 text-orange-800";
+                    break;
+                case "medium":
+                    priorityBadge.className = "badge bg-yellow-100 text-yellow-800";
+                    break;
+                default:
+                    priorityBadge.className = "badge bg-green-100 text-green-800";
+            }
+            
+            priorityBadge.textContent = priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1);
+            
+            // Update priority level display
+            document.getElementById("priority-level").textContent = priorityLevel.charAt(0).toUpperCase() + priorityLevel.slice(1);
+            
+            // Update recommended actions
+            const actionsList = document.getElementById("recommended-actions");
+            actionsList.innerHTML = "";
+            
+            if (coordinationData.recommended_actions && coordinationData.recommended_actions.length > 0) {
+                coordinationData.recommended_actions.forEach(action => {
+                    const li = document.createElement("li");
+                    li.textContent = action;
+                    actionsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement("li");
+                li.textContent = "No actions required at this time";
+                actionsList.appendChild(li);
+            }
+        }
+        
+        // Update system metrics
+        function updateSystemMetrics(metrics) {
+            if (metrics.processing_time) {
+                document.getElementById("system-response").textContent = `${metrics.processing_time.toFixed(2)}s`;
+            }
+            
+            // Display uptime if available
+            if (metrics.uptime) {
+                const hours = Math.floor(metrics.uptime);
+                const minutes = Math.round((metrics.uptime - hours) * 60);
+                const uptimeText = `${hours}h ${minutes}m`;
+                document.getElementById("active-agents").textContent = `5 Agents (${uptimeText})`;
+            }
+        }
+        
+        // Log agent communication for visualization
+        function logAgentCommunication(agentName, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const commLog = document.getElementById("agent-communication");
+            
+            // Create styled log entry
+            const logEntry = document.createElement("div");
+            logEntry.className = "mb-1 pb-1 border-b border-indigo-50";
+            
+            let icon = "fa-robot";
+            let color = "text-indigo-600";
+            
+            switch(agentName) {
+                case "Health Agent":
+                    icon = "fa-heartbeat";
+                    color = "text-red-600";
+                    break;
+                case "Safety Agent":
+                    icon = "fa-shield-alt";
+                    color = "text-green-600";
+                    break;
+                case "Reminder Agent":
+                    icon = "fa-bell";
+                    color = "text-yellow-600";
+                    break;
+                case "Coordinator":
+                    icon = "fa-sitemap";
+                    color = "text-purple-600";
+                    break;
+            }
+            
+            logEntry.innerHTML = `
+                <div class="flex items-start gap-2">
+                    <i class="fas ${icon} ${color} mt-1"></i>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium ${color}">${agentName}</span>
+                            <span class="text-gray-400 text-xs">${timestamp}</span>
+                        </div>
+                        <p class="text-gray-600 text-xs">${message}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Clear if too many entries
+            if (commLog.children.length > 5) {
+                commLog.innerHTML = '';
+            }
+            
+            // Add to log
+            commLog.appendChild(logEntry);
+            
+            // Scroll to bottom
+            commLog.scrollTop = commLog.scrollHeight;
+        }
+        
+        // Update health data (enhanced to show trend analysis)
+        function updateHealthData(data) {
+            const badge = document.getElementById("health-status-badge");
+            if (data.alerts && data.alerts.length > 0) {
+                badge.className = "badge bg-red-100 text-red-800";
+                badge.textContent = "Alert";
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "Normal";
+            }
+            
+            // Update metrics
+            document.getElementById("heart-rate").textContent = `${data.heart_rate || 0} bpm`;
+            document.getElementById("blood-pressure").textContent = data.blood_pressure || "N/A";
+            document.getElementById("glucose-level").textContent = `${data.glucose || 0} mg/dL`;
+            document.getElementById("oxygen-saturation").textContent = `${data.spo2 || 0}%`;
+            
+            // Log health trends if available
+            if (data.trend_analysis && typeof data.trend_analysis !== 'string') {
+                let trendMessage = "Analyzing health data trends: ";
+                
+                if (data.trend_analysis.heart_rate) {
+                    trendMessage += `Heart rate ${data.trend_analysis.heart_rate}`;
+                }
+                
+                if (data.trend_analysis.blood_pressure) {
+                    trendMessage += `, Blood pressure ${data.trend_analysis.blood_pressure}`;
+                }
+                
+                if (data.trend_analysis.glucose) {
+                    trendMessage += `, Glucose ${data.trend_analysis.glucose}`;
+                }
+                
+                logAgentCommunication("Health Agent", trendMessage);
+            }
+            
+            // Show alert details if present
+            if (data.alerts && data.alerts.length > 0) {
+                data.alerts.forEach(alert => {
+                    logAgentCommunication("Health Agent", `Alert: ${alert}`);
+                });
+                
+                if (data.recommendation) {
+                    logAgentCommunication("Health Agent", `Recommendation: ${
+                        data.recommendation.length > 100 
+                            ? data.recommendation.substring(0, 100) + "..." 
+                            : data.recommendation
+                    }`);
+                }
+            }
+        }
+        
+        // Update safety data (enhanced to show movement patterns)
+        function updateSafetyData(data) {
+            const badge = document.getElementById("safety-status-badge");
+            if (data.alert) {
+                badge.className = "badge bg-red-100 text-red-800";
+                badge.textContent = data.alert;
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "Safe";
+            }
+            
+            document.getElementById("current-location").textContent = data.location || "Unknown";
+            document.getElementById("last-activity").textContent = data.last_activity || "Unknown";
+            document.getElementById("last-movement").textContent = moment(data.timestamp).fromNow();
+            
+            // Log movement patterns if available
+            if (data.movement_analysis && typeof data.movement_analysis !== 'string') {
+                logAgentCommunication("Safety Agent", data.movement_analysis.insight || "Analyzing movement patterns");
+            }
+            
+            // Log location patterns if available
+            if (data.location_analysis && typeof data.location_analysis !== 'string') {
+                logAgentCommunication("Safety Agent", data.location_analysis.insight || "Analyzing location patterns");
+            }
+            
+            // Show alert details if present
+            if (data.alert) {
+                logAgentCommunication("Safety Agent", `Alert: ${data.alert}`);
+                
+                if (data.recommendation) {
+                    logAgentCommunication("Safety Agent", `Recommendation: ${
+                        data.recommendation.length > 100 
+                            ? data.recommendation.substring(0, 100) + "..." 
+                            : data.recommendation
+                    }`);
+                }
+            }
+        }
+        
+        // Update reminders data (enhanced with adherence analysis)
+        function updateRemindersData(data) {
+            const badge = document.getElementById("reminders-badge");
+            const remindersList = document.getElementById("reminders-list");
+
+            // Check if reminders exist in the nested structure
+            const upcomingReminders = data.upcoming_reminders || 
+                                    (data.reminders && data.reminders.upcoming_reminders) || 
+                                    [];
+            
+            if (Array.isArray(upcomingReminders) && upcomingReminders.length > 0) {
+                badge.className = "badge bg-yellow-100 text-yellow-800";
+                badge.textContent = `${upcomingReminders.length} Upcoming`;
+                remindersList.innerHTML = "";
+                
+                upcomingReminders.forEach(reminder => {
+                    const li = document.createElement("li");
+                    li.className = "status-item p-3 rounded-lg hover:bg-gray-50";
+                    li.innerHTML = `
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="font-medium text-gray-800">${reminder.type}</div>
+                            <div class="text-sm text-gray-500">In ${reminder.time_until} (${reminder.scheduled_time})</div>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            ${reminder.already_sent ? "Sent" : "Pending"} - 
+                            ${reminder.acknowledged ? "Acknowledged" : "Not acknowledged"}
+                        </div>
+                    `;
+                    remindersList.appendChild(li);
+                });
+                
+                // Show reminder message if available
+                if (data.recommendation) {
+                    logAgentCommunication("Reminder Agent", `Message: ${data.recommendation}`);
+                }
+            } else {
+                badge.className = "badge bg-green-100 text-green-800";
+                badge.textContent = "None";
+                remindersList.innerHTML = '<li class="status-item p-3 rounded-lg hover:bg-gray-50 text-gray-600">No upcoming reminders.</li>';
+            }
+            
+            // Log adherence analysis if available
+            if (data.adherence_analysis && typeof data.adherence_analysis === 'object' && data.adherence_analysis.insight) {
+                logAgentCommunication("Reminder Agent", `Adherence: ${data.adherence_analysis.insight}`);
+                
+                if (data.personalized_note) {
+                    logAgentCommunication("Reminder Agent", `Personalized Note: ${
+                        data.personalized_note.length > 100 
+                            ? data.personalized_note.substring(0, 100) + "..." 
+                            : data.personalized_note
+                    }`);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
