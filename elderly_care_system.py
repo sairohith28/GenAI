@@ -10,6 +10,9 @@ from collections import defaultdict
 import autogen
 from autogen import Agent, AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
 
+#libraries to retrieve the data from env
+from dotenv import load_dotenv 
+load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -26,11 +29,8 @@ class NumpyEncoder(json.JSONEncoder):
         if isinstance(obj, pd.Timestamp):
             return obj.strftime("%Y-%m-%d %H:%M:%S")
         return super().default(obj)
-
-# LLM API Configuration
-LLM_API_URL = "http://203.112.158.104:5006/v1/chat/completions"
-LLM_MODEL = "unsloth/Qwen2.5-1.5B-Instruct"
-
+LLM_API_URL = os.getenv("LLM_API_URL")
+LLM_MODEL = os.getenv("LLM_MODEL")
 # Function to call the LLM API
 def call_llm_api(prompt, system_message="You are an expert AI assistant", max_tokens=150):
     payload = {
