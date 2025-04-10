@@ -60,9 +60,9 @@ def load_data():
     """Load and preprocess the datasets"""
     base_path = os.path.dirname(os.path.abspath(__file__))
     try:
-        health_data = pd.read_csv(os.path.join(base_path, "health_monitoring.csv"))
-        safety_data = pd.read_csv(os.path.join(base_path, "safety_monitoring.csv"))
-        reminder_data = pd.read_csv(os.path.join(base_path, "daily_reminder.csv"))
+        health_data = pd.read_csv("/Users/hitty/hitty_code/hackathon/health_monitoring.csv")
+        safety_data = pd.read_csv("/Users/hitty/hitty_code/hackathon/safety_monitoring.csv")
+        reminder_data = pd.read_csv("/Users/hitty/hitty_code/hackathon/daily_reminder.csv")
         
         # Convert timestamps to datetime objects
         health_data['Timestamp'] = pd.to_datetime(health_data['Timestamp'])

@@ -75,21 +75,37 @@ def reminders(user_id):
         try:
             data = request.json
             reminder_type = data.get('reminder_type')
-            scheduled_time = data.get('scheduled_time')
+            scheduled_time_str = data.get('scheduled_time')
             description = data.get('description', '')
+            
+            # Properly parse the scheduled time string to a datetime.time object
+            # The scheduled_time could be in various formats like "13:00", "13:00:00"
+            try:
+                # Try parsing with different formats
+                scheduled_time_obj = pd.to_datetime(scheduled_time_str).time()
+            except Exception as time_error:
+                logger.error(f"Error parsing time '{scheduled_time_str}': {time_error}")
+                return jsonify({"error": f"Invalid time format: {scheduled_time_str}. Please use HH:MM or HH:MM:SS format."}), 400
             
             # Add new reminder to the reminder_data DataFrame
             new_reminder = pd.DataFrame({
                 'Device-ID/User-ID': [user_id],
                 'Timestamp': [datetime.now()],
                 'Reminder Type': [reminder_type],
-                'Scheduled Time': [scheduled_time],
+                'Scheduled Time': [scheduled_time_obj],  # Store the time object directly
                 'Reminder Sent (Yes/No)': ['No'],
                 'Acknowledged (Yes/No)': ['No']
             })
             
+            # Update the system's reminder data
             system.reminder_data = pd.concat([system.reminder_data, new_reminder], ignore_index=True)
+            
+            # Make sure the time format is preserved when saving to CSV
+            # Convert back to string for CSV storage - pandas will handle this
             system.reminder_data.to_csv('/Users/hitty/hitty_code/hackathon/daily_reminder.csv', index=False)
+            
+            # Update the ReminderAgent's data to reflect the new reminder
+            system.reminder_agent.reminder_data = system.reminder_data
             
             return jsonify({"status": "Reminder added successfully"})
         except Exception as e:
