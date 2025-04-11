@@ -1,14 +1,3 @@
-import os
-import pandas as pd
-import requests
-import json
-import numpy as np
-import time
-from datetime import datetime, timedelta
-import logging
-from collections import defaultdict
-import autogen
-from autogen import Agent, AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
 
 #libraries to retrieve the data from env
 from dotenv import load_dotenv 
